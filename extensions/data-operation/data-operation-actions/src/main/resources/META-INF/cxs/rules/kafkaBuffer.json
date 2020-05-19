@@ -1,14 +1,9 @@
 {
   "metadata": {
-    "id": "notSystemEventCondition",
-    "name": "notSystemEventCondition",
-    "description": "",
-    "systemTags": [
-      "event",
-      "condition",
-      "eventCondition"
-    ],
-    "readOnly": true
+    "id": "kafkaBuffer",
+    "name": "Buffer Event",
+    "description": "bufferEvent Event in Kafka",
+    "readOnly": false
   },
   "condition": {
     "type": "booleanCondition",
@@ -34,6 +29,9 @@
       "operator": "and"
     }
   },
-  "parameters": [
+  "actions": [
+    {
+      "type": "bufferEventProcessing"
+    }
   ]
 }

@@ -30,7 +30,6 @@ import javax.xml.bind.annotation.XmlRootElement;
  * the segment’s condition. If they match, users are automatically added to the segment. Similarly, if at any given point during, they cease to satisfy the segment’s condition,
  * they are automatically removed from it.
  */
-@XmlRootElement
 public class Segment extends MetadataItem {
 
     /**
