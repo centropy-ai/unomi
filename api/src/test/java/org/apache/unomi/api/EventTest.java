@@ -14,7 +14,20 @@ public class EventTest extends TestCase {
     }
 
     @Test
-    public void testSendAtInFuture() {
+    public void testSendAt_CorrectValue() {
+        Event e = new Event();
+        Calendar timeStampHour = Calendar.getInstance();
+        timeStampHour.add(Calendar.HOUR, -2);
+        e.setTimeStamp(timeStampHour.getTime());
+        Calendar sendAtHour = Calendar.getInstance();
+        sendAtHour.add(Calendar.HOUR, -1);
+        e.setSendAt(sendAtHour.getTime());
+        Assert.assertEquals("sendAt must be allow less than current system time", e.getSendAt(), sendAtHour.getTime());
+        Assert.assertEquals("timeStamp must be less then or equal to sendAt", e.getTimeStamp(), timeStampHour.getTime());
+    }
+
+    @Test
+    public void testSendAt_InFuture() {
         Event e = new Event();
         Calendar nextOneHour = Calendar.getInstance();
         nextOneHour.add(Calendar.HOUR, 1);
