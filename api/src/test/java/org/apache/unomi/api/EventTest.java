@@ -5,20 +5,25 @@ import junit.framework.TestCase;
 import org.junit.Assert;
 import org.junit.Test;
 
+import java.util.Calendar;
 import java.util.Date;
 
-class EventTest extends TestCase {
+public class EventTest extends TestCase {
+    public EventTest(String name) {
+        super(name);
+    }
+
     @Test
-    public void testSendAt() {
-        Date now = new Date();
+    public void testSendAtInFuture() {
         Event e = new Event();
-        Date nextOneHour = new Date();
-        nextOneHour.setTime(now.getTime() + 60 * 60);
-        e.setTimeStamp(nextOneHour);
-        Date nextTwoHour = new Date();
-        nextOneHour.setTime(now.getTime() + 2 * 60 * 60);
-        e.setSendAt(nextTwoHour);
-        assert e.getSendAt().getTime() == now.getTime();
-        Assert.assertEquals(e.getTimeStamp().getTime(), (now.getTime() - 60 * 60));
+        Calendar nextOneHour = Calendar.getInstance();
+        nextOneHour.add(Calendar.HOUR, 1);
+        e.setTimeStamp(nextOneHour.getTime());
+        Calendar nextTwoHour = Calendar.getInstance();
+        nextTwoHour.add(Calendar.HOUR, 2);
+        e.setSendAt(nextTwoHour.getTime());
+        Date now = Calendar.getInstance().getTime();
+        Assert.assertTrue("sendAt must be allow less than current system time", e.getSendAt().getTime() <= now.getTime());
+        Assert.assertTrue("timeStamp must be less then or equal to sendAt", e.getTimeStamp().getTime() <= e.getSendAt().getTime());
     }
 }

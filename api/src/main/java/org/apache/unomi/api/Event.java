@@ -109,13 +109,13 @@ public class Event extends Item implements TimestampedItem {
     /**
      * Instantiates a new Event.
      *
-     * @param eventType the event type identifier
-     * @param session   the session associated with the event
-     * @param profile   the profile associated with the event
-     * @param scope     the scope from which the event is issued
-     * @param source    the source of the event
-     * @param target    the target of the event if any
-     * @param timestamp the timestamp associated with the event if provided
+     * @param eventType  the event type identifier
+     * @param session    the session associated with the event
+     * @param profile    the profile associated with the event
+     * @param scope      the scope from which the event is issued
+     * @param source     the source of the event
+     * @param target     the target of the event if any
+     * @param timestamp  the timestamp associated with the event if provided
      * @param persistent specifies if the event needs to be persisted
      */
     public Event(String eventType, Session session, Profile profile, String scope, Item source, Item target, Map<String, Object> properties, Date timestamp, boolean persistent) {
@@ -424,12 +424,12 @@ public class Event extends Item implements TimestampedItem {
      * @param sendAt the time event was sent
      */
     public void setSendAt(Date sendAt) {
-        Date now = new Date();
+        Date now = Calendar.getInstance().getTime();
         if (sendAt == null) {
             sendAt = now;
         }
         this.sendAt = sendAt;
-        int shift = now.compareTo(sendAt);
+        long shift = now.getTime() - sendAt.getTime();
         if (shift < 0) {
             this.sendAt = now;
             this.timeStamp.setTime(this.timeStamp.getTime() + shift);
