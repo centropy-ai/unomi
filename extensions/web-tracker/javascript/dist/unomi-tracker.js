@@ -12930,12 +12930,7 @@ Unomi.prototype.onpersonalize = function (msg) {
  * @returns {{eventType: *, scope}}
  */
 Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
-//    var now = new Date()
-//    var sentAt = {}
-//    var sentAt = {
-//        normal: now.toString(),
-//        iso: now.toISOString()
-//    }
+
     var event = {
         eventType: eventType,
         scope: window.digitalData.scope,
@@ -12953,10 +12948,7 @@ Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
     }else{
         event.properties = {}
     }
-    event.a = "a"
-    console.log(event)
-
-    console.log("Hello 1")
+    console.log("aaa")
     return event;
 };
 
@@ -13058,14 +13050,8 @@ Unomi.prototype.collectEvent = function (event, successCallback, errorCallback) 
  */
 Unomi.prototype.collectEvents = function (events, successCallback, errorCallback) {
     events.sessionId = this.sessionId;
-//    var now = new Date()
-//    var normal = now.toString()
-//    var iso = now.toISOString()
-//    events.sentAt = {
-//        normal: normal,
-//        iso: iso
-//    }
-
+    var now = new Date()
+    events.sendAt = now.toISOString()
     var data = JSON.stringify(events);
 
     this.ajax({
