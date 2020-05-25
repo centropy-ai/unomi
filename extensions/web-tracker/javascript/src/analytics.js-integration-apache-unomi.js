@@ -21,12 +21,14 @@ var extend  = require('extend');
 
 var Unomi = (module.exports = integration('Apache Unomi')
     .global('cxs')
+
     .assumesPageview()
     .readyOnLoad()
     .option('scope', 'systemscope')
     .option('url', 'http://localhost:8181')
     .option('timeoutInMilliseconds', 3000)
     .option('sessionCookieName', 'unomiSessionId')
+    .option('sentAt')
     .option('sessionId'));
 
 /**
@@ -203,9 +205,57 @@ Unomi.prototype.track = function(track) {
         formEvent.properties = this.extractFormData(form);
         this.collectEvent(formEvent);
     } else {
+
+        var input = track.properties()
+        var s
+        var t
+        if(input.t && input.t != {} ){
+            t = input.t
+            if(t.itemType){
+                t.itemType = t.itemType
+            }else{
+                t.itemType = " "
+            }
+            if(t.itemId){
+                t.itemId = t.itemId
+            }else{
+                t.itemId = " "
+            }
+            if(t.properties){
+                t.properties = t.properties
+            }else{
+                t.properties = {}
+            }
+        }else{
+            t = {itemType:" ",itemId:" ",properties:{} }
+        }
+
+        if(input.s && input.s != {} ){
+            s = input.s
+            if(s.itemType){
+                s.itemType = s.itemType
+            }else{
+                s.itemType = " "
+            }
+            if(s.itemId){
+                s.itemId = s.itemId
+            }else{
+                s.itemId = " "
+            }
+            if(s.properties){
+                s.properties = s.properties
+            }else{
+                s.properties = {}
+            }
+        }else{
+            s = {itemType:" ",itemId:" ",properties:{} }
+        }
+
+        var prop = window.digitalData.page
+        prop.additional_properties = s.properties
         this.collectEvent(this.buildEvent(track.event(),
-            this.buildTargetPage(),
-            this.buildSource(this.options.scope, 'site', track.context()),
+            this.buildTargetPage(t),
+            this.buildSource(s.itemType, s.itemId, prop),
             track.properties()
         ));
     }
@@ -298,21 +348,28 @@ Unomi.prototype.onpersonalize = function (msg) {
  * @returns {{eventType: *, scope}}
  */
 Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
+//    var now = new Date()
+//    var sentAt = {}
+//    var sentAt = {
+//        normal: now.toString(),
+//        iso: now.toISOString()
+//    }
     var event = {
         eventType: eventType,
-        scope: window.digitalData.scope
-    };
+        scope: window.digitalData.scope,
+        itemType: 'event',
 
+    };
     if (target) {
         event.target = target;
     }
-
     if (source) {
         event.source = source;
     }
-
-    if (properties) {
-        event.properties = properties;
+    if (properties && properties.p) {
+        event.properties = properties.p;
+    }else{
+        event.properties = {}
     }
 
     return event;
@@ -333,8 +390,11 @@ Unomi.prototype.buildFormEvent = function (formName) {
  *
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
-Unomi.prototype.buildTargetPage = function () {
-    return this.buildTarget(window.digitalData.page.pageInfo.pageID, 'page', window.digitalData.page);
+Unomi.prototype.buildTargetPage = function (t) {
+    var itemId = t.itemId;
+    var itemType = t.itemType;
+    var properties = t.properties;
+    return this.buildTarget(itemId, itemType, properties);
 };
 
 /**
@@ -364,8 +424,8 @@ Unomi.prototype.buildPage = function (page) {
  * @param {object} [targetProperties] The optional properties of the target
  * @returns {{scope, itemId: *, itemType: *}}
  */
-Unomi.prototype.buildTarget = function (targetId, targetType, targetProperties) {
-    return this.buildObject(targetId, targetType, targetProperties);
+Unomi.prototype.buildTarget = function (itemId, itemType, targetProperties) {
+    return this.buildObject(itemId, itemType, targetProperties);
 };
 
 /**
@@ -380,7 +440,18 @@ Unomi.prototype.buildSource = function (sourceId, sourceType, sourceProperties) 
     return this.buildObject(sourceId, sourceType, sourceProperties);
 };
 
+Unomi.prototype.buildObject = function (itemId, itemType, properties) {
+    var object = {
+        scope: window.digitalData.scope,
+        itemId: itemId,
+        itemType: itemType
+    };
+    if (properties) {
+        object.properties = properties;
+    }
 
+    return object;
+};
 /**
  * This function will send an event to Apache Unomi
  * @param {object} event The event object to send, you can build it using this.buildEvent(eventType, target, source)
@@ -388,7 +459,9 @@ Unomi.prototype.buildSource = function (sourceId, sourceType, sourceProperties) 
  * @param {function} errorCallback will be executed in case of error
  */
 Unomi.prototype.collectEvent = function (event, successCallback, errorCallback) {
+
     this.collectEvents({events: [event]}, successCallback, errorCallback);
+
 };
 
 /**
@@ -400,8 +473,16 @@ Unomi.prototype.collectEvent = function (event, successCallback, errorCallback) 
  */
 Unomi.prototype.collectEvents = function (events, successCallback, errorCallback) {
     events.sessionId = this.sessionId;
+//    var now = new Date()
+//    var normal = now.toString()
+//    var iso = now.toISOString()
+//    events.sentAt = {
+//        normal: normal,
+//        iso: iso
+//    }
 
     var data = JSON.stringify(events);
+
     this.ajax({
         url: this.options.url + '/smile',
         type: 'POST',
@@ -473,19 +554,7 @@ Unomi.prototype.generateGuid = function () {
         s4() + '-' + s4() + s4() + s4();
 };
 
-Unomi.prototype.buildObject = function (itemId, itemType, properties) {
-    var object = {
-        scope: window.digitalData.scope,
-        itemId: itemId,
-        itemType: itemType
-    };
 
-    if (properties) {
-        object.properties = properties;
-    }
-
-    return object;
-};
 
 /**
  * This is an utility function to execute AJAX call
