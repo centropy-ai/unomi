@@ -204,11 +204,7 @@ Unomi.prototype.track = function(track) {
         formEvent.properties = this.extractFormData(form);
         this.collectEvent(formEvent);
     } else {
-        var c = track.context()
-        var test = this.options.scope
-        console.log('begin')
-        console.log(c)
-        console.log(test)
+
         var input = track.properties()
         var s
         var t
