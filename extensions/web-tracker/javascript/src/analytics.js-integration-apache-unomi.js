@@ -217,7 +217,7 @@ Unomi.prototype.track = function(track) {
                 t.properties = {}
             }
         }else{
-            t = {itemType:" ",itemId:" ",properties:{} }
+            t = {properties:{}}
         }
 
         if(input.s && input.s != {} ){
@@ -229,7 +229,7 @@ Unomi.prototype.track = function(track) {
                 s.properties = {}
             }
         }else{
-            s = {itemType:" ",itemId:" ",properties:{} }
+            s = {properties:{} }
         }
 
         var prop = window.digitalData.page
