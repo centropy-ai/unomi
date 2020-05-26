@@ -28,7 +28,6 @@ var Unomi = (module.exports = integration('Apache Unomi')
     .option('url', 'http://localhost:8181')
     .option('timeoutInMilliseconds', 3000)
     .option('sessionCookieName', 'unomiSessionId')
-    .option('sentAt')
     .option('sessionId'));
 
 /**
@@ -211,16 +210,7 @@ Unomi.prototype.track = function(track) {
         var t
         if(input.t && input.t != {} ){
             t = input.t
-            if(t.itemType){
-                t.itemType = t.itemType
-            }else{
-                t.itemType = " "
-            }
-            if(t.itemId){
-                t.itemId = t.itemId
-            }else{
-                t.itemId = " "
-            }
+
             if(t.properties){
                 t.properties = t.properties
             }else{
@@ -232,16 +222,7 @@ Unomi.prototype.track = function(track) {
 
         if(input.s && input.s != {} ){
             s = input.s
-            if(s.itemType){
-                s.itemType = s.itemType
-            }else{
-                s.itemType = " "
-            }
-            if(s.itemId){
-                s.itemId = s.itemId
-            }else{
-                s.itemId = " "
-            }
+
             if(s.properties){
                 s.properties = s.properties
             }else{
@@ -385,6 +366,7 @@ Unomi.prototype.buildFormEvent = function (formName) {
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
 Unomi.prototype.buildTargetPage = function (t) {
+
     var itemId = t.itemId;
     var itemType = t.itemType;
     var properties = t.properties;
@@ -419,6 +401,7 @@ Unomi.prototype.buildPage = function (page) {
  * @returns {{scope, itemId: *, itemType: *}}
  */
 Unomi.prototype.buildTarget = function (itemId, itemType, targetProperties) {
+
     return this.buildObject(itemId, itemType, targetProperties);
 };
 

@@ -12610,7 +12610,6 @@ var Unomi = (module.exports = integration('Apache Unomi')
     .option('url', 'http://localhost:8181')
     .option('timeoutInMilliseconds', 3000)
     .option('sessionCookieName', 'unomiSessionId')
-    .option('sentAt')
     .option('sessionId'));
 
 /**
@@ -12793,16 +12792,7 @@ Unomi.prototype.track = function(track) {
         var t
         if(input.t && input.t != {} ){
             t = input.t
-            if(t.itemType){
-                t.itemType = t.itemType
-            }else{
-                t.itemType = " "
-            }
-            if(t.itemId){
-                t.itemId = t.itemId
-            }else{
-                t.itemId = " "
-            }
+
             if(t.properties){
                 t.properties = t.properties
             }else{
@@ -12948,7 +12938,7 @@ Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
     }else{
         event.properties = {}
     }
-    console.log("aaa")
+    console.log("HELLO 1")
     return event;
 };
 
@@ -12968,6 +12958,16 @@ Unomi.prototype.buildFormEvent = function (formName) {
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
 Unomi.prototype.buildTargetPage = function (t) {
+    if(t.itemType){
+        t.itemType = t.itemType
+    }else{
+        t.itemType = " "
+    }
+    if(t.itemId){
+        t.itemId = t.itemId
+    }else{
+        t.itemId = " "
+    }
     var itemId = t.itemId;
     var itemType = t.itemType;
     var properties = t.properties;
@@ -13002,6 +13002,7 @@ Unomi.prototype.buildPage = function (page) {
  * @returns {{scope, itemId: *, itemType: *}}
  */
 Unomi.prototype.buildTarget = function (itemId, itemType, targetProperties) {
+
     return this.buildObject(itemId, itemType, targetProperties);
 };
 
