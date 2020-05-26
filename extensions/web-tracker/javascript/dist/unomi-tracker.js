@@ -12786,33 +12786,46 @@ Unomi.prototype.track = function(track) {
         formEvent.properties = this.extractFormData(form);
         this.collectEvent(formEvent);
     } else {
-
+        var c = track.context()
+        var test = this.options.scope
+        console.log('begin')
+        console.log(c)
+        console.log(test)
         var input = track.properties()
         var s
         var t
         if(input.t && input.t != {} ){
             t = input.t
-
+            if (t.itemType) {
+                t.itemType = t.itemType;
+            } else {
+                t.itemType = " ";
+            }
+            if (t.itemId) {
+                t.itemId = t.itemId;
+            } else {
+                t.itemId = " ";
+            }
             if(t.properties){
                 t.properties = t.properties
             }else{
                 t.properties = {}
             }
         }else{
-            t = {itemType:" ",itemId:" ",properties:{} }
+            t = {properties:{}}
         }
 
         if(input.s && input.s != {} ){
             s = input.s
-            if(s.itemType){
-                s.itemType = s.itemType
-            }else{
-                s.itemType = " "
+            if (s.itemType) {
+                s.itemType = s.itemType;
+            } else {
+                s.itemType = " ";
             }
-            if(s.itemId){
-                s.itemId = s.itemId
-            }else{
-                s.itemId = " "
+            if (s.itemId) {
+                s.itemId = s.itemId;
+            } else {
+                s.itemId = " ";
             }
             if(s.properties){
                 s.properties = s.properties
@@ -12820,14 +12833,16 @@ Unomi.prototype.track = function(track) {
                 s.properties = {}
             }
         }else{
-            s = {itemType:" ",itemId:" ",properties:{} }
+            s = {properties:{} }
         }
 
-        var prop = window.digitalData.page
+        var prop = track.context()
         prop.additional_properties = s.properties
         this.collectEvent(this.buildEvent(track.event(),
             this.buildTargetPage(t),
             this.buildSource(s.itemType, s.itemId, prop),
+//            this.buildSource(this.options.scope, 'site', track.context()),
+
             track.properties()
         ));
     }
@@ -12923,7 +12938,7 @@ Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
 
     var event = {
         eventType: eventType,
-        scope: window.digitalData.scope,
+        scope: this.options.scope,
         itemType: 'event',
 
     };
@@ -12938,7 +12953,7 @@ Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
     }else{
         event.properties = {}
     }
-    console.log("HELLO 1")
+    console.log("Hello 1")
     return event;
 };
 
@@ -12958,16 +12973,7 @@ Unomi.prototype.buildFormEvent = function (formName) {
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
 Unomi.prototype.buildTargetPage = function (t) {
-    if(t.itemType){
-        t.itemType = t.itemType
-    }else{
-        t.itemType = " "
-    }
-    if(t.itemId){
-        t.itemId = t.itemId
-    }else{
-        t.itemId = " "
-    }
+
     var itemId = t.itemId;
     var itemType = t.itemType;
     var properties = t.properties;
@@ -13020,7 +13026,7 @@ Unomi.prototype.buildSource = function (sourceId, sourceType, sourceProperties) 
 
 Unomi.prototype.buildObject = function (itemId, itemType, properties) {
     var object = {
-        scope: window.digitalData.scope,
+        scope: this.options.scope,
         itemId: itemId,
         itemType: itemType
     };

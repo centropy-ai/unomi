@@ -204,7 +204,11 @@ Unomi.prototype.track = function(track) {
         formEvent.properties = this.extractFormData(form);
         this.collectEvent(formEvent);
     } else {
-
+        var c = track.context()
+        var test = this.options.scope
+        console.log('begin')
+        console.log(c)
+        console.log(test)
         var input = track.properties()
         var s
         var t
@@ -232,7 +236,7 @@ Unomi.prototype.track = function(track) {
             s = {properties:{} }
         }
 
-        var prop = window.digitalData.page
+        var prop = track.context()
         prop.additional_properties = s.properties
         this.collectEvent(this.buildEvent(track.event(),
             this.buildTargetPage(t),
@@ -332,7 +336,7 @@ Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
 
     var event = {
         eventType: eventType,
-        scope: window.digitalData.scope,
+        scope: this.options.scope,
         itemType: 'event',
 
     };
@@ -419,7 +423,7 @@ Unomi.prototype.buildSource = function (sourceId, sourceType, sourceProperties) 
 
 Unomi.prototype.buildObject = function (itemId, itemType, properties) {
     var object = {
-        scope: window.digitalData.scope,
+        scope: this.options.scope,
         itemId: itemId,
         itemType: itemType
     };
