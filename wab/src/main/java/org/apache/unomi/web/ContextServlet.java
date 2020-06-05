@@ -415,7 +415,7 @@ public class ContextServlet extends HttpServlet {
         Profile profile;
         String profileId = existingProfileId;
         if (profileId == null) {
-            profileId = UUID.randomUUID().toString();
+            profileId = Item.getKSUID();
         }
         profile = new Profile(profileId);
         profile.setProperty("firstVisit", timestamp);

@@ -17,6 +17,7 @@
 
 package org.apache.unomi.api;
 
+import com.amirkhawaja.Ksuid;
 import org.apache.unomi.api.actions.ActionPostExecutor;
 
 import javax.xml.bind.annotation.XmlRootElement;
@@ -119,7 +120,7 @@ public class Event extends Item implements TimestampedItem {
      * @param persistent specifies if the event needs to be persisted
      */
     public Event(String eventType, Session session, Profile profile, String scope, Item source, Item target, Map<String, Object> properties, Date timestamp, boolean persistent) {
-        this(UUID.randomUUID().toString(), eventType, session, profile, scope, source, target, properties, timestamp, persistent);
+        this(Item.getKSUID(), eventType, session, profile, scope, source, target, properties, timestamp, persistent);
     }
 
     /**

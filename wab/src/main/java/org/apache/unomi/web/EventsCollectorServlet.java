@@ -137,7 +137,7 @@ public class EventsCollectorServlet extends HttpServlet {
             }
             if (profile == null) {
                 // Create non persisted profile to create the session
-                profile = new Profile("temp_" + UUID.randomUUID().toString());
+                profile = new Profile("temp_" + Item.getKSUID());
                 profile.setProperty("firstVisit", timestamp);
             }
             /*

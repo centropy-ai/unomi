@@ -17,6 +17,7 @@
 
 package org.apache.unomi.api;
 
+import com.amirkhawaja.Ksuid;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -42,6 +43,7 @@ public abstract class Item implements Serializable {
 
     private static final Map<Class,String> itemTypeCache = new ConcurrentHashMap<>();
 
+    static final Ksuid ksuid = new Ksuid();
     public static String getItemType(Class clazz) {
         String itemType = itemTypeCache.get(clazz);
         if (itemType != null) {
@@ -139,5 +141,14 @@ public abstract class Item implements Serializable {
 
     public void setVersion(Long version) {
         this.version = version;
+    }
+
+    public static String getKSUID() {
+        String uid = "";
+        try {
+            uid = ksuid.generate();
+        } catch (Exception ignored) {
+        }
+        return uid;
     }
 }

@@ -23,6 +23,7 @@ import org.apache.camel.Processor;
 import org.apache.camel.component.kafka.KafkaConstants;
 import org.apache.commons.lang3.BooleanUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.unomi.api.Item;
 import org.apache.unomi.api.PropertyType;
 import org.apache.unomi.api.services.ProfileService;
 import org.apache.unomi.router.api.ImportConfiguration;
@@ -87,7 +88,7 @@ public class LineSplitProcessor implements Processor {
         String[] profileData = rfc4180Parser.parseLine(((String) exchange.getIn().getBody()));
 
         ProfileToImport profileToImport = new ProfileToImport();
-        profileToImport.setItemId(UUID.randomUUID().toString());
+        profileToImport.setItemId(Item.getKSUID());
         profileToImport.setItemType("profile");
         profileToImport.setScope(RouterConstants.SYSTEM_SCOPE);
 

@@ -18,10 +18,7 @@
 package org.apache.unomi.plugins.baseplugin.actions;
 
 import org.apache.commons.lang3.StringUtils;
-import org.apache.unomi.api.Event;
-import org.apache.unomi.api.Persona;
-import org.apache.unomi.api.Profile;
-import org.apache.unomi.api.Session;
+import org.apache.unomi.api.*;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.actions.ActionPostExecutor;
@@ -95,7 +92,7 @@ public class MergeProfilesOnPropertyAction implements ActionExecutor {
                 profile = profiles.get(0);
             } else {
                 // Create a new profile
-                profile = new Profile(UUID.randomUUID().toString());
+                profile = new Profile(Item.getKSUID());
                 profile.setProperty("firstVisit", currentSession.getTimeStamp());
                 profile.getSystemProperties().put(mergeProfilePropertyName, mergeProfilePropertyValue);
             }

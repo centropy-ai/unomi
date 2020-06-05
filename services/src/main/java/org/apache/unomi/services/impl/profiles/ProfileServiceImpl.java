@@ -555,7 +555,7 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
     public Persona savePersona(Persona profile) {
         profile.setSystemProperty("lastUpdated", new Date());
         if (persistenceService.load(profile.getItemId(), Persona.class) == null) {
-            Session session = new PersonaSession(UUID.randomUUID().toString(), profile, new Date());
+            Session session = new PersonaSession(Item.getKSUID(), profile, new Date());
             persistenceService.save(profile);
             persistenceService.save(session);
         } else {
@@ -812,7 +812,7 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
     public Persona createPersona(String personaId) {
         Persona newPersona = new Persona(personaId);
 
-        Session session = new PersonaSession(UUID.randomUUID().toString(), newPersona, new Date());
+        Session session = new PersonaSession(Item.getKSUID(), newPersona, new Date());
 
         persistenceService.save(newPersona);
         persistenceService.save(session);
@@ -891,7 +891,7 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
         if (personaToSave != null) {
             //Generate a UUID if no itemId is set on the persona
             if (personaToSave.getPersona().getItemId() == null) {
-                personaToSave.getPersona().setItemId("persona-" + UUID.randomUUID().toString());
+                personaToSave.getPersona().setItemId("persona-" + Item.getKSUID());
             }
             boolean savedPersona = persistenceService.save(personaToSave.getPersona());
             //Browse persona sessions
@@ -899,7 +899,7 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
             for (PersonaSession session : sessions) {
                 //Generate a UUID if no itemId is set on the session
                 if (session.getItemId() == null) {
-                    session.setItemId(UUID.randomUUID().toString());
+                    session.setItemId(Item.getKSUID());
                 }
                 //link the session to the persona
                 session.setProfile(personaToSave.getPersona());
