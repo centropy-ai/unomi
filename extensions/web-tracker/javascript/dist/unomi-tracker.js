@@ -3088,7 +3088,7 @@ module.exports = bindAll(new User());
 
 module.exports.User = User;
 
-},{"./cookie":16,"./entity":17,"bind-all":44,"component-cookie":46,"debug":26,"inherits":64,"uuid":99}],26:[function(require,module,exports){
+},{"./cookie":16,"./entity":17,"bind-all":44,"component-cookie":46,"debug":26,"inherits":64,"uuid":100}],26:[function(require,module,exports){
 
 /**
  * Expose `debug()` as the module.
@@ -12318,6 +12318,131 @@ function encode(string) {
     return utftext;
 }
 },{}],98:[function(require,module,exports){
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports["default"] = void 0;
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var allowedParams = ["utm_source", "utm_medium", "utm_campaign", "utm_content", "utm_name", "utm_term", "initial_utm_source", "initial_utm_medium", "initial_utm_campaign", "initial_utm_content", "initial_utm_name", "initial_utm_term"];
+
+function checkIfInitialParamsExist(params) {
+  return Object.keys(params).find(function (k) {
+    return k.includes("initial");
+  });
+}
+
+;
+
+var UTMParams = /*#__PURE__*/function () {
+  function UTMParams() {
+    _classCallCheck(this, UTMParams);
+  }
+
+  _createClass(UTMParams, null, [{
+    key: "parse",
+
+    /**
+     * Get utm params allowed by GA
+     *
+     * @return {Object}
+     */
+    value: function parse() {
+      var urlSearch = new URL(window.location);
+      var urlParams = new URLSearchParams(urlSearch.search);
+      var parsedParams = {};
+      allowedParams.forEach(function (key) {
+        var paramValue = urlParams.get(key);
+
+        if (paramValue) {
+          parsedParams[key] = paramValue;
+        }
+      });
+      return parsedParams;
+    }
+    /**
+     * Save UTM params in localStorage
+     *
+     * @param {Object} params
+     * @return {Boolean}
+     */
+
+  }, {
+    key: "save",
+    value: function save(params) {
+      if (!params || !allowedParams.some(function (key) {
+        return !!params[key];
+      })) {
+        return false;
+      }
+
+      try {
+        var paramsToSave = {};
+        var initialParams = {};
+        Object.assign(paramsToSave, params);
+
+        if (window.localStorage.getItem("utmSavedParams")) {
+          var existingParams = {};
+
+          try {
+            existingParams = JSON.parse(window.localStorage.getItem("utmSavedParams"));
+          } catch (e) {
+            existingParams = {};
+          }
+
+          if (checkIfInitialParamsExist(existingParams)) {
+            Object.keys(existingParams).forEach(function (k) {
+              if (k.includes('initial_')) {
+                initialParams[k] = existingParams[k];
+              }
+            });
+          }
+        } else {
+          Object.keys(paramsToSave).forEach(function (k) {
+            initialParams['initial_' + k] = paramsToSave[k];
+          });
+        }
+
+        Object.assign(paramsToSave, initialParams);
+        window.localStorage.setItem("utmSavedParams", JSON.stringify(paramsToSave));
+        return true;
+      } catch (e) {
+        throw new Error(e);
+        return false;
+      }
+    }
+    /**
+     * Reads UTM params from localStorage
+     *
+     * @return {Object}
+     */
+
+  }, {
+    key: "get",
+    value: function get() {
+      var savedParams = window.localStorage.getItem("utmSavedParams");
+
+      if (savedParams) {
+        return JSON.parse(savedParams);
+      }
+
+      return null;
+    }
+  }]);
+
+  return UTMParams;
+}();
+
+var _default = UTMParams;
+exports["default"] = _default;
+},{}],99:[function(require,module,exports){
 (function (global){
 
 var rng;
@@ -12353,7 +12478,7 @@ module.exports = rng;
 
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],99:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 //     uuid.js
 //
 //     Copyright (c) 2010-2012 Robert Kieffer
@@ -12538,7 +12663,7 @@ uuid.unparse = unparse;
 
 module.exports = uuid;
 
-},{"./rng":98}],100:[function(require,module,exports){
+},{"./rng":99}],101:[function(require,module,exports){
 module.exports={
   "name": "unomi-analytics",
   "version": "1.0.5",
@@ -12563,7 +12688,8 @@ module.exports={
   "dependencies": {
     "@segment/analytics.js-core": "3.7.2",
     "@segment/analytics.js-integration": "2.1.1",
-    "extend": "^3.0.2"
+    "extend": "^3.0.2",
+    "utm-params-saver": "^1.0.15"
   },
   "devDependencies": {
     "@segment/eslint-config": "^3.1.1",
@@ -12579,7 +12705,7 @@ module.exports={
   }
 }
 
-},{}],101:[function(require,module,exports){
+},{}],102:[function(require,module,exports){
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -12605,10 +12731,12 @@ var Unomi = (module.exports = integration('Apache Unomi')
     .global('cxs')
     .assumesPageview()
     .readyOnLoad()
-    .option('scope', 'systemscope')
+    .option('scope', '')
+    .option('writeKey', '')
+    .option('sessionTimeOut', 30*60*1000)
     .option('url', 'http://localhost:8181')
     .option('timeoutInMilliseconds', 3000)
-    .option('sessionCookieName', 'unomiSessionId')
+    .option('sessionCookieName', 'XSessionId')
     .option('sessionId'));
 
 /**
@@ -12619,7 +12747,7 @@ var Unomi = (module.exports = integration('Apache Unomi')
 Unomi.prototype.initialize = function() {
     var self = this;
 
-    console.info('[UNOMI] Initializing...', arguments);
+    console.info('[Tracker] Initializing...', arguments);
 
     this.analytics.on('invoke', function(msg) {
         var action = msg.action();
@@ -12643,30 +12771,27 @@ Unomi.prototype.initialize = function() {
         scope: self.options.scope
     };
 
+    window.digitalData.page = window.digitalData.page || {
+        pageInfo: {
+            pageName: document.title,
+            pagePath : location.pathname + location.hash,
+            destinationURL: location.href
+        }
+    }
+
+    var unomiPage = window.digitalData.page;
+    var context = this.context();
+    if (!unomiPage) {
+        unomiPage = window.digitalData.page = { pageInfo:{} }
+    }
     if (self.options.initialPageProperties) {
         var props = self.options.initialPageProperties;
-        var unomiPage = window.digitalData.page;
-        if (!unomiPage) {
-            unomiPage = window.digitalData.page = { pageInfo:{} }
-        }
         this.fillPageData(unomiPage, props);
-        window.digitalData.events = window.digitalData.events || [];
-        window.digitalData.events.push(this.buildEvent('view', this.buildPage(unomiPage), this.buildSource(this.options.scope, 'site')))
     }
+    window.digitalData.events = window.digitalData.events || [];
+    window.digitalData.events.push(this.buildEvent('view', this.buildPage(unomiPage), this.buildSource(location.href, 'page', context)))
 
-    if (!self.options.sessionId) {
-        var cookie = require('component-cookie');
-
-        self.sessionId = cookie(self.options.sessionCookieName);
-        // so we should not need to implement our own
-        if (!self.sessionId || self.sessionId === '') {
-            self.sessionId = self.generateGuid();
-            cookie(self.options.sessionCookieName, self.sessionId);
-        }
-    } else {
-        this.sessionId = self.options.sessionId;
-    }
-
+    this.extendSessionID()
     setTimeout(self.loadContext.bind(self), 0);
 };
 
@@ -12690,7 +12815,7 @@ Unomi.prototype.page = function(page) {
     var unomiPage = { };
     this.fillPageData(unomiPage, page.json().properties);
 
-    this.collectEvent(this.buildEvent('view', this.buildPage(unomiPage), this.buildSource(this.options.scope, 'site')));
+    this.collectEvent(this.buildEvent('view', this.buildPage(unomiPage), this.buildSource(location.href, 'page')));
 };
 
 Unomi.prototype.fillPageData = function(unomiPage, props) {
@@ -12699,10 +12824,10 @@ Unomi.prototype.fillPageData = function(unomiPage, props) {
     unomiPage.interests = props.interests || {};
     unomiPage.pageInfo = extend({}, unomiPage.pageInfo, props.pageInfo);
     unomiPage.pageInfo.pageName = unomiPage.pageInfo.pageName || props.title;
-    unomiPage.pageInfo.pageID = unomiPage.pageInfo.pageID || props.path;
+    unomiPage.pageInfo.pagePath = unomiPage.pageInfo.pagePath || props.path;
     unomiPage.pageInfo.pagePath = unomiPage.pageInfo.pagePath || props.path;
     unomiPage.pageInfo.destinationURL = unomiPage.pageInfo.destinationURL || props.url;
-    unomiPage.pageInfo.referringURL = unomiPage.pageInfo.referringURL || props.referrer;
+    unomiPage.pageInfo.referringURL = document.referrer;
     this.processReferrer();
 };
 
@@ -12757,7 +12882,7 @@ Unomi.prototype.processReferrer = function() {
 Unomi.prototype.identify = function(identify) {
     this.collectEvent(this.buildEvent("identify",
         this.buildTarget(identify.userId(), "analyticsUser", identify.traits()),
-        this.buildSource(this.options.scope, 'site', identify.context())));
+        this.buildSource(location.href, 'page', identify.context())));
 };
 
 /**
@@ -12769,6 +12894,10 @@ Unomi.prototype.identify = function(identify) {
 Unomi.prototype.track = function(track) {
     // we use the track event name to know that we are submitted a form because Analytics.js trackForm method doesn't give
     // us another way of knowing that we are processing a form.
+    var properties = track.properties();
+    var target = properties.track || this.buildTargetPage();
+    var source = properties.source || this.buildSource(location.href, 'page', window.digitalData.page);
+    var props = properties.props;
     if (track.event() && track.event().indexOf("form") === 0) {
         var form = document.forms[track.properties().formName];
         var formEvent = this.buildFormEvent(form.name);
@@ -12776,9 +12905,9 @@ Unomi.prototype.track = function(track) {
         this.collectEvent(formEvent);
     } else {
         this.collectEvent(this.buildEvent(track.event(),
-            this.buildTargetPage(),
-            this.buildSource(this.options.scope, 'site', track.context()),
-            track.properties()
+            target,
+            source,
+            props
         ));
     }
 };
@@ -12790,11 +12919,15 @@ Unomi.prototype.track = function(track) {
  * @param {boolean} [invalidate=false] Should we invalidate the current context
  */
 Unomi.prototype.loadContext = function (skipEvents, invalidate) {
+    this.extendSessionID();
     this.contextLoaded = true;
+    var context = this.context();
     var jsonData = {
         requiredProfileProperties: ['j:nodename'],
-        source: this.buildPage(window.digitalData.page)
+        source: this.buildPage(window.digitalData.page, 'page', context)
     };
+    var now = new Date();
+    jsonData.sendAt = now.toISOString();
     if (!skipEvents) {
         jsonData.events = window.digitalData.events
     }
@@ -12844,7 +12977,6 @@ Unomi.prototype.loadContext = function (skipEvents, invalidate) {
         success: onSuccess,
         error: this.executeFallback
     });
-
     console.info('[Tracker] Context loading...');
 };
 
@@ -12872,7 +13004,8 @@ Unomi.prototype.onpersonalize = function (msg) {
 Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
     var event = {
         eventType: eventType,
-        scope: window.digitalData.scope
+        scope: window.digitalData.scope,
+        timeStamp: (new Date()).toISOString()
     };
 
     if (target) {
@@ -12906,7 +13039,7 @@ Unomi.prototype.buildFormEvent = function (formName) {
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
 Unomi.prototype.buildTargetPage = function () {
-    return this.buildTarget(window.digitalData.page.pageInfo.pageID, 'page', window.digitalData.page);
+    return this.buildTarget(window.digitalData.page.pageInfo.pagePath, 'page');
 };
 
 /**
@@ -12915,7 +13048,7 @@ Unomi.prototype.buildTargetPage = function () {
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
 Unomi.prototype.buildSourcePage = function () {
-    return this.buildSource(window.digitalData.page.pageInfo.pageID, 'page', window.digitalData.page);
+    return this.buildSource(window.digitalData.page.pageInfo.pagePath, 'page', window.digitalData.page);
 };
 
 
@@ -12925,7 +13058,7 @@ Unomi.prototype.buildSourcePage = function () {
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
 Unomi.prototype.buildPage = function (page) {
-    return this.buildSource(page.pageInfo.pageID, 'page', page);
+    return this.buildSource(page.pageInfo.pagePath, 'page', page);
 };
 
 /**
@@ -13080,6 +13213,8 @@ Unomi.prototype.ajax = function (ajaxOptions) {
     if (ajaxOptions.dataType) {
         xhr.setRequestHeader('Accept', ajaxOptions.dataType);
     }
+    xhr.setRequestHeader('X-Client-Id', this.options.scope)
+    xhr.setRequestHeader('X-Client-Access-Token', this.options.writeKey)
 
     if (ajaxOptions.responseType) {
         xhr.responseType = ajaxOptions.responseType;
@@ -13141,6 +13276,38 @@ Unomi.prototype.executeFallback = function () {
     }
 };
 
+Unomi.prototype.extendSessionID = function(){
+    if (!this.options.sessionId) {
+        var cookie = require('component-cookie');
+
+        this.sessionId = cookie(this.options.sessionCookieName);
+        // so we should not need to implement our own
+        if (!this.sessionId || this.sessionId === '') {
+            this.sessionId = this.generateGuid();
+        }
+    } else {
+        this.sessionId = this.options.sessionId;
+    }
+    cookie(this.options.sessionCookieName, this.sessionId, {maxage: this.options.sessionTimeOut});
+}
+
+Unomi.prototype.context = function () {
+    var utm = require('utm-params-saver');
+    var width = window.innerWidth
+        || document.documentElement.clientWidth
+        || document.body.clientWidth;
+
+    var height = window.innerHeight
+        || document.documentElement.clientHeight
+        || document.body.clientHeight;
+    var connectionType = navigator.connection.type || navigator.connection.effectiveType;
+    var data = utm.default.parse()
+    data.screen_width = width;
+    data.screen_height = height;
+    data.connection_type = connectionType;
+    return data
+}
+
 Unomi.prototype.extractFormData = function (form) {
     var params = {};
     for (var i = 0; i < form.elements.length; i++) {
@@ -13190,14 +13357,13 @@ Unomi.prototype.extractFormData = function (form) {
                     }
                     break;
                 default:
-                    console.warn("[UNOMI] " + e.nodeName + " form element type not implemented and will not be tracked.");
+                    console.warn("[Tracker] " + e.nodeName + " form element type not implemented and will not be tracked.");
             }
         }
     }
     return params;
 };
-
-},{"@segment/analytics.js-integration":29,"component-cookie":46,"extend":62}],102:[function(require,module,exports){
+},{"@segment/analytics.js-integration":29,"component-cookie":46,"extend":62,"utm-params-saver":98}],103:[function(require,module,exports){
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -13248,7 +13414,7 @@ exports.VERSION = require('../package.json').version;
 for (var integration in Integrations) {
     analytics.use(Integrations[integration]);
 }
-},{"../package.json":100,"./integrations":103,"@segment/analytics.js-core":19}],103:[function(require,module,exports){
+},{"../package.json":101,"./integrations":104,"@segment/analytics.js-core":19}],104:[function(require,module,exports){
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -13272,5 +13438,5 @@ module.exports = {
     'apache-unomi': require('./analytics.js-integration-apache-unomi')
 };
 
-},{"./analytics.js-integration-apache-unomi":101}]},{},[102])(102)
+},{"./analytics.js-integration-apache-unomi":102}]},{},[103])(103)
 });

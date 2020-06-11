@@ -879,7 +879,7 @@ public class SegmentServiceImpl extends AbstractServiceImpl implements SegmentSe
                     profileToAdd.setSystemProperty("lastUpdated", new Date());
                     sourceMap.put("systemProperties", profileToAdd.getSystemProperties());
                     persistenceService.update(profileToAdd.getItemId(), null, Profile.class, sourceMap);
-                    Event profileUpdated = new Event("profileUpdated", null, profileToAdd, null, null, profileToAdd, new Date());
+                    Event profileUpdated = new Event("profileUpdated", null, profileToAdd, null, segment, profileToAdd, new Date());
                     profileUpdated.setPersistent(false);
                     eventService.send(profileUpdated);
                     updatedProfileCount++;
@@ -899,7 +899,7 @@ public class SegmentServiceImpl extends AbstractServiceImpl implements SegmentSe
                     profileToRemove.setSystemProperty("lastUpdated", new Date());
                     sourceMap.put("systemProperties", profileToRemove.getSystemProperties());
                     persistenceService.update(profileToRemove.getItemId(), null, Profile.class, sourceMap);
-                    Event profileUpdated = new Event("profileUpdated", null, profileToRemove, null, null, profileToRemove, new Date());
+                    Event profileUpdated = new Event("profileUpdated", null, profileToRemove, null, segment, profileToRemove, new Date());
                     profileUpdated.setPersistent(false);
                     eventService.send(profileUpdated);
                     updatedProfileCount++;
@@ -922,7 +922,7 @@ public class SegmentServiceImpl extends AbstractServiceImpl implements SegmentSe
                     profileToRemove.setSystemProperty("lastUpdated", new Date());
                     sourceMap.put("systemProperties", profileToRemove.getSystemProperties());
                     persistenceService.update(profileToRemove.getItemId(), null, Profile.class, sourceMap);
-                    Event profileUpdated = new Event("profileUpdated", null, profileToRemove, null, null, profileToRemove, new Date());
+                    Event profileUpdated = new Event("profileUpdated", null, profileToRemove, null, segment, profileToRemove, new Date());
                     profileUpdated.setPersistent(false);
                     eventService.send(profileUpdated);
                     updatedProfileCount++;

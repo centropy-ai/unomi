@@ -2472,6 +2472,11 @@ util@~0.10.1:
   dependencies:
     inherits "2.0.3"
 
+utm-params-saver@^1.0.15:
+  version "1.0.15"
+  resolved "https://registry.yarnpkg.com/utm-params-saver/-/utm-params-saver-1.0.15.tgz#7763cbb0d16be5dfe2c812b80b299f2d3c2dd83d"
+  integrity sha512-i0ztS1H+wvq7ZlyV6QFpTNpa3FWKU+whZ28tgQ9+NxGE/JIVXxflxEL/9eCXU+0oNB6L13tMuBh2XsOjkxu81Q==
+
 uuid@^2.0.2:
   version "2.0.3"
   resolved "https://registry.yarnpkg.com/uuid/-/uuid-2.0.3.tgz#67e2e863797215530dff318e5bf9dcebfd47b21a"

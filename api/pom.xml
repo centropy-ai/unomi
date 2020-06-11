@@ -48,6 +48,11 @@
             <scope>compile</scope>
         </dependency>
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
             <groupId>com.amirkhawaja</groupId>
             <artifactId>ksuid</artifactId>
             <version>1.0.0</version>

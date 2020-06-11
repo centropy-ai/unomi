@@ -70,13 +70,13 @@ public class ServletCommon {
                 processedEventsCnt++;
                 if (event.getEventType() != null) {
                     Event eventToSend = new Event(event.getEventType(), session, profile, event.getScope(), event.getSource(),
-                            event.getTarget(), event.getProperties(), timestamp, event.isPersistent());
+                            event.getTarget(), event.getProperties(), event.getTimeStamp(), event.isPersistent(), sendAt);
                     if (!eventService.isEventAllowed(event, thirdPartyId)) {
                         logger.warn("Event is not allowed : {}", event.getEventType());
                         continue;
                     }
                     if (thirdPartyId != null && event.getItemId() != null) {
-                        eventToSend = new Event(event.getItemId(), event.getEventType(), session, profile, event.getScope(), event.getSource(), event.getTarget(), event.getProperties(), timestamp, event.isPersistent());
+                        eventToSend = new Event(event.getItemId(), event.getEventType(), session, profile, event.getScope(), event.getSource(), event.getTarget(), event.getProperties(), event.getTimeStamp(), event.isPersistent(), sendAt);
                     }
                     if (filteredEventTypes != null && filteredEventTypes.contains(event.getEventType())) {
                         logger.debug("Profile is filtering event type {}", event.getEventType());
@@ -87,7 +87,6 @@ public class ServletCommon {
                         eventToSend.setProfileId(null);
                     }
 
-                    eventToSend.setSendAt(sendAt);
                     eventToSend.getAttributes().put(Event.HTTP_REQUEST_ATTRIBUTE, request);
                     eventToSend.getAttributes().put(Event.HTTP_RESPONSE_ATTRIBUTE, response);
                     logger.debug("Received event " + event.getEventType() + " for profile=" + profile.getItemId() + " session="

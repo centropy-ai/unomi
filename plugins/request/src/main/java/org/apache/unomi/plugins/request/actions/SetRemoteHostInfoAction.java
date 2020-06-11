@@ -195,6 +195,7 @@ public class SetRemoteHostInfoAction implements ActionExecutor {
     }
 
     private boolean ipLookupInDatabase(String remoteAddr, Session session) {
+        session.setProperty("ip", remoteAddr);
         if (databaseReader == null) {
             return false;
         }
@@ -205,12 +206,12 @@ public class SetRemoteHostInfoAction implements ActionExecutor {
             CityResponse cityResponse = databaseReader.city(InetAddress.getByName(remoteAddr));
 
             if (cityResponse.getCountry().getName() != null) {
-                session.setProperty("sessionCountryCode", cityResponse.getCountry().getIsoCode());
-                session.setProperty("sessionCountryName", cityResponse.getCountry().getName());
+                session.setProperty("country", cityResponse.getCountry().getIsoCode());
+                session.setProperty("countryName", cityResponse.getCountry().getName());
             }
             if (cityResponse.getCity().getName() != null) {
-                session.setProperty("sessionCity", cityResponse.getCity().getName());
-                session.setProperty("sessionCityId", cityResponse.getCity().getGeoNameId());
+                session.setProperty("city", cityResponse.getCity().getName());
+                session.setProperty("cityId", cityResponse.getCity().getGeoNameId());
             }
 
             if (cityResponse.getSubdivisions().size() > 0) {
@@ -226,9 +227,8 @@ public class SetRemoteHostInfoAction implements ActionExecutor {
 
             Map<String, Double> locationMap = new HashMap<String, Double>();
             if (cityResponse.getLocation().getLatitude() != null && cityResponse.getLocation().getLongitude() != null) {
-                locationMap.put("lat", cityResponse.getLocation().getLatitude());
-                locationMap.put("lon", cityResponse.getLocation().getLongitude());
-                session.setProperty("location", locationMap);
+                session.setProperty("latitude", cityResponse.getLocation().getLatitude());
+                session.setProperty("longitude", cityResponse.getLocation().getLongitude());
             }
             return true;
         } catch (IOException | GeoIp2Exception e) {

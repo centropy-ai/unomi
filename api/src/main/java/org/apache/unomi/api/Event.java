@@ -18,6 +18,10 @@
 package org.apache.unomi.api;
 
 import com.amirkhawaja.Ksuid;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.DateSerializer;
 import org.apache.unomi.api.actions.ActionPostExecutor;
 
 import javax.xml.bind.annotation.XmlRootElement;
@@ -32,6 +36,7 @@ import java.util.*;
  * processed either natively or via extension plugins, source and target can represent just about anything.
  */
 @XmlRootElement
+@JsonAutoDetect
 public class Event extends Item implements TimestampedItem {
 
     /**
@@ -126,6 +131,23 @@ public class Event extends Item implements TimestampedItem {
     /**
      * Instantiates a new Event.
      *
+     * @param eventType  the event type identifier
+     * @param session    the session associated with the event
+     * @param profile    the profile associated with the event
+     * @param scope      the scope from which the event is issued
+     * @param source     the source of the event
+     * @param target     the target of the event if any
+     * @param timestamp  the timestamp associated with the event if provided
+     * @param persistent specifies if the event needs to be persisted
+     */
+    public Event(String eventType, Session session, Profile profile, String scope, Item source, Item target, Map<String, Object> properties, Date timestamp, boolean persistent, Date sendAt) {
+        this(eventType, session, profile, scope, source, target, properties, timestamp, persistent);
+        this.setSendAt(sendAt);
+    }
+
+    /**
+     * Instantiates a new Event.
+     *
      * @param itemId     the event item id identifier
      * @param eventType  the event type identifier
      * @param session    the session associated with the event
@@ -143,6 +165,25 @@ public class Event extends Item implements TimestampedItem {
         if (properties != null) {
             this.properties = properties;
         }
+    }
+
+    /**
+     * Instantiates a new Event.
+     *
+     * @param itemId     the event item id identifier
+     * @param eventType  the event type identifier
+     * @param session    the session associated with the event
+     * @param profile    the profile associated with the event
+     * @param scope      the scope from which the event is issued
+     * @param source     the source of the event
+     * @param target     the target of the event if any
+     * @param properties the properties for this event if any
+     * @param timestamp  the timestamp associated with the event if provided
+     * @param persistent specifies if the event needs to be persisted
+     */
+    public Event(String itemId, String eventType, Session session, Profile profile, String scope, Item source, Item target, Map<String, Object> properties, Date timestamp, boolean persistent, Date sendAt) {
+        this(itemId, eventType, session, profile, scope, source, target, properties, timestamp, persistent);
+        this.setSendAt(sendAt);
     }
 
     private void initEvent(String eventType, Session session, Profile profile, String scope, Item source, Item target, Date timestamp) {
@@ -223,6 +264,7 @@ public class Event extends Item implements TimestampedItem {
      *
      * @return the event time stamp
      */
+    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm'Z'")
     public Date getTimeStamp() {
         return timeStamp;
     }
