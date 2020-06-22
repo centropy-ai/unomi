@@ -7,11 +7,7 @@ import org.apache.camel.component.kafka.KafkaComponent;
 import org.apache.camel.component.kafka.KafkaConfiguration;
 import org.apache.camel.component.kafka.KafkaEndpoint;
 import org.apache.camel.core.osgi.OsgiDefaultCamelContext;
-import org.apache.camel.core.osgi.OsgiServiceRegistry;
-import org.apache.camel.impl.DefaultCamelContext;
-import org.apache.camel.impl.FileStateRepository;
 import org.apache.camel.impl.JndiRegistry;
-import org.apache.camel.spi.Registry;
 import org.apache.unomi.api.Event;
 import org.apache.unomi.operation.actions.BufferEventProcessingAction;
 import org.apache.unomi.operation.router.EventContextProducer;
@@ -26,6 +22,8 @@ import java.util.Map;
 
 public class EventKafkaContext implements SynchronousBundleListener {
     private OsgiDefaultCamelContext camelContext;
+    RedisStateRepository repository;
+
     private BundleContext bundleContext;
     private JacksonDataFormat objectMapper;
     private static Logger logger = LoggerFactory.getLogger(EventContextProducer.class);
@@ -40,7 +38,7 @@ public class EventKafkaContext implements SynchronousBundleListener {
 
     public void initCamelContext() throws Exception {
         camelContext = new OsgiDefaultCamelContext(bundleContext);
-        RedisStateRepository repository = new RedisStateRepository(redisCluster);
+        repository = new RedisStateRepository(redisCluster);
         JndiRegistry registry = new JndiRegistry();
         registry.bind("offsetRepo", repository);
         camelContext.setRegistry(registry);
@@ -117,6 +115,7 @@ public class EventKafkaContext implements SynchronousBundleListener {
         //This is to shutdown Camel context
         //(will stop all routes/components/endpoints etc and clear internal state/cache)
         this.camelContext.stop();
+        this.repository.stop();
     }
 
     public void setBundleContext(BundleContext bundleContext) {
