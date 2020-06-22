@@ -19,10 +19,14 @@ package org.apache.unomi.plugins.baseplugin.actions;
 
 import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Item;
+import org.apache.unomi.api.Profile;
+import org.apache.unomi.api.Session;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
+import org.apache.unomi.persistence.spi.PropertyHelper;
 
+import java.util.Date;
 import java.util.Map;
 
 public class SendEventAction implements ActionExecutor {
@@ -36,18 +40,15 @@ public class SendEventAction implements ActionExecutor {
     @Override
     public int execute(Action action, Event event) {
         String eventType = (String) action.getParameterValues().get("eventType");
+        Object persistence = action.getParameterValues().get("persistence");
+        boolean persistenceValue = PropertyHelper.getBooleanValue(persistence);
+
         @SuppressWarnings("unchecked")
         Map<String, Object> eventProperties = (Map<String, Object>) action.getParameterValues().get("eventProperties");
         Item target = (Item) action.getParameterValues().get("eventTarget");
-//        String type = (String) target.get("type");
-
-//            Item targetItem = new CustomItem();
-//            BeanUtils.populate(targetItem, target);
-
-        Event subEvent = new Event(eventType, event.getSession(), event.getProfile(), event.getScope(), event, target, event.getTimeStamp());
+        Event subEvent = new Event(eventType, event.getSession(), event.getProfile(), event.getScope(), event, target, eventProperties, event.getTimeStamp(), persistenceValue);
         subEvent.setProfileId(event.getProfileId());
         subEvent.getAttributes().putAll(event.getAttributes());
-        subEvent.getProperties().putAll(eventProperties);
 
         return eventService.send(subEvent);
     }

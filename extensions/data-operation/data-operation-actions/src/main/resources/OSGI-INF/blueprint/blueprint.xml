@@ -28,6 +28,7 @@
             <cm:property name="kafka.workerPoolMaxSize" value="1024"/>
             <cm:property name="kafka.workerPoolCoreSize" value="2"/>
             <cm:property name="camel.component.kafka.worker-pool-max-size" value="2"/>
+            <cm:property name="redis.cluster" value="redis://redis-cluster:7000"/>
         </cm:default-properties>
     </cm:property-placeholder>
     <bean id="jacksonDataFormat" class="org.apache.camel.component.jackson.JacksonDataFormat">
@@ -35,7 +36,7 @@
     </bean>
     <!-- cfg configuration -->
     <!-- Action executor -->
-    <bean id="kafkaProducer" class="org.apache.unomi.operation.router.EventKafkaContextProducer"
+    <bean id="kafkaContext" class="org.apache.unomi.operation.EventKafkaContext"
           init-method="initCamelContext" destroy-method="preDestroy">
         <property name="kafkaProps">
             <map>
@@ -45,14 +46,22 @@
                 <entry key="autoCommitEnable" value="${kafka.autoCommitEnable}"/>
                 <entry key="workerPoolMaxSize" value="${kafka.workerPoolMaxSize}"/>
                 <entry key="workerPoolCoreSize" value="${kafka.workerPoolCoreSize}"/>
-                <entry key="camel.component.kafka.worker-pool-max-size" value="${camel.component.kafka.worker-pool-max-size}"/>
+                <entry key="camel.component.kafka.worker-pool-max-size"
+                       value="${camel.component.kafka.worker-pool-max-size}"/>
             </map>
         </property>
         <property name="bundleContext" ref="blueprintBundleContext"/>
         <property name="objectMapper" ref="jacksonDataFormat"/>
+        <property name="segmentListener" ref="segmentListener"/>
+        <property name="redisCluster" value="${redis.cluster}"/>
+    </bean>
+
+    <reference id="profileService" interface="org.apache.unomi.api.services.ProfileService"/>
+    <bean class="org.apache.unomi.operation.segment.SegmentListener" id="segmentListener">
+        <property name="profileService" ref="profileService"/>
     </bean>
     <bean class="org.apache.unomi.operation.actions.BufferEventProcessingAction" id="validator">
-        <property name="producer" ref="kafkaProducer"/>
+        <property name="context" ref="kafkaContext"/>
     </bean>
     <service id="bufferEventProcessing" interface="org.apache.unomi.api.actions.ActionExecutor" ref="validator">
         <service-properties>

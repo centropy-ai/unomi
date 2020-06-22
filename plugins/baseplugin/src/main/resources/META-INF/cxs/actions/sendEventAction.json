@@ -20,6 +20,11 @@
       "id": "eventProperties",
       "type": "properties",
       "multivalued": false
+    },
+    {
+      "id": "persistence",
+      "type": "boolean",
+      "multivalued": false
     }
   ]
 }

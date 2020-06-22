@@ -91,6 +91,11 @@
             <version>3.5</version>
         </dependency>
         <dependency>
+            <groupId>org.redisson</groupId>
+            <artifactId>redisson</artifactId>
+            <version>3.13.1</version>
+        </dependency>
+        <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
         </dependency>
@@ -145,51 +150,6 @@
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.felix</groupId>
-                <artifactId>maven-bundle-plugin</artifactId>
-                <extensions>true</extensions>
-                <configuration>
-                    <instructions>
-                        <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
-                        <Import-Package>
-                            sun.misc;resolution:=optional,
-                            org.osgi.service.event*;resolution:=optional,
-                            org.apache.camel,
-                            org.apache.camel.builder,
-                            org.apache.camel.component.file.remote,
-                            org.apache.camel.component.file,
-                            org.apache.camel.component.jackson,
-                            org.apache.camel.component.kafka,
-                            org.apache.camel.component.servlet,
-                            org.apache.camel.component.servlet.osgi,
-                            org.apache.camel.core.osgi,
-                            org.apache.camel.impl,
-                            org.apache.camel.model,
-                            org.apache.camel.model.dataformat,
-                            org.apache.camel.model.rest,
-                            org.apache.camel.processor.aggregate,
-                            org.apache.camel.spi,
-                            org.apache.unomi.api,
-                            org.apache.unomi.api.services,
-                            org.apache.unomi.router.api.services,
-                            org.apache.kafka.clients.producer;resolution:=optional,
-                            org.apache.kafka.clients.consumer;resolution:=optional,
-                            com.jcraft.jsch,
-                            org.osgi.framework,
-                            org.osgi.service.http,
-                            org.slf4j,
-                            com.ibm.security.krb5.internal;resolution:=optional,
-                            *
-                        </Import-Package>
-                        <Private-Package>
-                            org.apache.unomi.operation.actions,
-                            org.apache.unomi.operation.router
-                        </Private-Package>
-                        <_dsannotations>*</_dsannotations>
-                    </instructions>
-                </configuration>
-            </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>build-helper-maven-plugin</artifactId>
