@@ -91,11 +91,6 @@
             <version>3.5</version>
         </dependency>
         <dependency>
-            <groupId>io.lettuce</groupId>
-            <artifactId>lettuce-core</artifactId>
-            <version>5.3.1.RELEASE</version>
-        </dependency>
-        <dependency>
             <groupId>commons-collections</groupId>
             <artifactId>commons-collections</artifactId>
         </dependency>
@@ -158,21 +153,7 @@
                     <instructions>
                         <Embed-Dependency>*;scope=compile|runtime</Embed-Dependency>
                         <Import-Package>
-                            brave;resolution:=optional,
-                            brave.*;resolution:=optional,
-                            brave.handler.*,
-                            brave.propagation.*,
-                            io.netty.channel.nio:resolution:=optional,
-                            io.netty.buffer:resolution:=optional,
-                            io.netty.channel:resolution:=optional,
-                            io.netty.bootstrap:resolution:=optional,
-                            io.netty.handler.codec:resolution:=optional,
-                            io.netty.channel.epoll:resolution:=optional,
-                            io.netty.channel.group:resolution:=optional,
-                            io.netty.util:resolution:=optional,
-                            io.netty.util.concurrent:resolution:=optional,
-                            io.netty.util.internal.logging:resolution:=optional,
-                            sun.misc;resolution:=optional:resolution:=optional,
+                            sun.misc;resolution:=optional,
                             org.osgi.service.event*;resolution:=optional,
                             org.apache.camel,
                             org.apache.camel.builder,
@@ -194,9 +175,6 @@
                             org.apache.unomi.router.api.services,
                             org.apache.kafka.clients.producer;resolution:=optional,
                             org.apache.kafka.clients.consumer;resolution:=optional,
-                            io.lettuce.core.cluster,
-                            io.lettuce.core.cluster.api,
-                            io.lettuce.core.cluster.api.sync,
                             com.jcraft.jsch,
                             org.osgi.framework,
                             org.osgi.service.http,

@@ -52,14 +52,14 @@
         </property>
         <property name="bundleContext" ref="blueprintBundleContext"/>
         <property name="objectMapper" ref="jacksonDataFormat"/>
-        <property name="segmentListener" ref="segmentListener"/>
-        <property name="redisCluster" value="${redis.cluster}"/>
+<!--        <property name="segmentListener" ref="segmentListener"/>-->
+<!--        <property name="redisCluster" value="${redis.cluster}"/>-->
     </bean>
 
     <reference id="profileService" interface="org.apache.unomi.api.services.ProfileService"/>
-    <bean class="org.apache.unomi.operation.segment.SegmentListener" id="segmentListener">
-        <property name="profileService" ref="profileService"/>
-    </bean>
+<!--    <bean class="org.apache.unomi.operation.segment.SegmentListener" id="segmentListener">-->
+<!--        <property name="profileService" ref="profileService"/>-->
+<!--    </bean>-->
     <bean class="org.apache.unomi.operation.actions.BufferEventProcessingAction" id="validator">
         <property name="context" ref="kafkaContext"/>
     </bean>

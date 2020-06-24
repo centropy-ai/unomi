@@ -1,35 +1,33 @@
 package org.apache.unomi.operation;
-
-import io.lettuce.core.cluster.RedisClusterClient;
-import io.lettuce.core.cluster.api.StatefulRedisClusterConnection;
-import io.lettuce.core.cluster.api.sync.RedisAdvancedClusterCommands;
-import org.apache.camel.impl.MemoryStateRepository;
-
-public class RedisStateRepository extends MemoryStateRepository {
-    RedisAdvancedClusterCommands<String, String> redis;
-    StatefulRedisClusterConnection<String, String> connection;
-
-    public RedisStateRepository(String redisCluster) {
-        RedisClusterClient redisClient = RedisClusterClient.create(redisCluster);
-
-        connection = redisClient.connect();
-        redis = connection.sync();
-    }
-
-    @Override
-    public void setState(String key, String value) {
-        this.redis.set(key, value);
-    }
-
-    @Override
-    public String getState(String key) {
-        return this.redis.get(key);
-    }
-
-    @Override
-    public void stop() throws Exception {
-        super.stop();
-        connection.close();
-        redis.shutdown(true);
-    }
-}
+//
+//import org.apache.camel.impl.MemoryStateRepository;
+//import redis.clients.jedis.HostAndPort;
+//import redis.clients.jedis.JedisCluster;
+//
+//import java.io.IOException;
+//
+//public class RedisStateRepository extends MemoryStateRepository {
+//    JedisCluster jedisCluster ;
+//
+//    public RedisStateRepository(String redisCluster) {
+//        try (JedisCluster jedisCluster = new JedisCluster(new HostAndPort("redis-cluster", 7000))) {
+//            this.jedisCluster = jedisCluster;
+//        } catch (IOException e) {}
+//    }
+//
+//    @Override
+//    public void setState(String key, String value) {
+//        this.jedisCluster.set(key, value);
+//    }
+//
+//    @Override
+//    public String getState(String key) {
+//        return this.jedisCluster.get(key);
+//    }
+//
+//    @Override
+//    public void stop() throws Exception {
+//        super.stop();
+//        this.jedisCluster.close();
+//    }
+//}

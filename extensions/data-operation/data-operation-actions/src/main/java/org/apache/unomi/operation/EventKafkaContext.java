@@ -22,7 +22,6 @@ import java.util.Map;
 
 public class EventKafkaContext implements SynchronousBundleListener {
     private OsgiDefaultCamelContext camelContext;
-    RedisStateRepository repository;
 
     private BundleContext bundleContext;
     private JacksonDataFormat objectMapper;
@@ -30,19 +29,15 @@ public class EventKafkaContext implements SynchronousBundleListener {
 
     private Map<String, String> kafkaProps;
 
-    private String redisCluster;
-
-    private SegmentListener segmentListener;
+//    RedisStateRepository repository;
+//    private String redisCluster;
+//    private SegmentListener segmentListener;
 
     final private static String SEGMENT_OPT = "kafka-consume-segmentOpt";
 
     public void initCamelContext() throws Exception {
         camelContext = new OsgiDefaultCamelContext(bundleContext);
-        repository = new RedisStateRepository(redisCluster);
-        JndiRegistry registry = new JndiRegistry();
-        registry.bind("offsetRepo", repository);
-        camelContext.setRegistry(registry);
-        logger.info("Start Camel Context");
+//        repository = new RedisStateRepository(redisCluster);
 
         try {
             camelContext.addRoutes(new RouteBuilder() {
@@ -73,35 +68,36 @@ public class EventKafkaContext implements SynchronousBundleListener {
                     from("direct:kafkaRoute").marshal(objectMapper).log("Send to DataOperation: ${body}").to(endpoint);
                 }
             });
-            camelContext.addRoutes(new RouteBuilder() {
-                @Override
-                public void configure() throws Exception {
-                    StringBuilder uriBuilder = new StringBuilder("kafka:");
-                    StringBuilder kafkaOptions = new StringBuilder();
-                    KafkaConfiguration kafkaConfiguration = new KafkaConfiguration();
-
-                    for (Map.Entry<String, String> entry : kafkaProps.entrySet()) {
-                        if (entry.getKey().equals("topic")) {
-                            kafkaConfiguration.setTopic("segmentOpt");
-                            uriBuilder.append(entry.getValue());
-                            continue;
-                        }
-                        if (entry.getKey().equals("brokers")) {
-                            kafkaConfiguration.setBrokers(entry.getValue());
-                        }
-                        kafkaOptions.append(entry.getKey()).append("=").append(entry.getValue());
-                    }
-                    kafkaOptions.append("offsetRepository=#offsetRepo");
-                    kafkaOptions.append("groupId=").append(SEGMENT_OPT);
-                    String kafkaEndpointURI = uriBuilder.append("?").append(kafkaOptions.toString()).toString();
-                    KafkaComponent kafka = new KafkaComponent(this.getContext());
-                    kafka.setBrokers(kafkaEndpointURI);
-                    kafka.setConfiguration(kafkaConfiguration);
-                    KafkaEndpoint endpoint = new KafkaEndpoint(kafkaEndpointURI, kafka);
-                    endpoint.setConfiguration(kafkaConfiguration);
-                    from(endpoint).routeId("fromDataRouterKafka").process(segmentListener).log("Message received from Kafka : ${body}");
-                }
-            });
+//            camelContext.addRoutes(new RouteBuilder() {
+//                @Override
+//                public void configure() throws Exception {
+//                    StringBuilder uriBuilder = new StringBuilder("kafka:");
+//                    StringBuilder kafkaOptions = new StringBuilder();
+//                    KafkaConfiguration kafkaConfiguration = new KafkaConfiguration();
+//
+//                    for (Map.Entry<String, String> entry : kafkaProps.entrySet()) {
+//                        if (entry.getKey().equals("topic")) {
+//                            kafkaConfiguration.setTopic("segmentOpt");
+//                            uriBuilder.append(entry.getValue());
+//                            continue;
+//                        }
+//                        if (entry.getKey().equals("brokers")) {
+//                            kafkaConfiguration.setBrokers(entry.getValue());
+//                        }
+//                        kafkaOptions.append(entry.getKey()).append("=").append(entry.getValue());
+//                    }
+//                    kafkaOptions.append("offsetRepository=#offsetRepo");
+//                    kafkaOptions.append("groupId=").append(SEGMENT_OPT);
+//                    String kafkaEndpointURI = uriBuilder.append("?").append(kafkaOptions.toString()).toString();
+//                    KafkaComponent kafka = new KafkaComponent(this.getContext());
+//                    kafka.setBrokers(kafkaEndpointURI);
+//                    kafka.setConfiguration(kafkaConfiguration);
+//                    KafkaEndpoint endpoint = new KafkaEndpoint(kafkaEndpointURI, kafka);
+//                    kafkaConfiguration.setOffsetRepository(repository);
+//                    endpoint.setConfiguration(kafkaConfiguration);
+//                    from(endpoint).routeId("fromDataRouterKafka").process(segmentListener).log("Message received from Kafka : ${body}");
+//                }
+//            });
             camelContext.start();
             logger.info("KAFKA start context");
         } catch (Exception e) {
@@ -115,7 +111,7 @@ public class EventKafkaContext implements SynchronousBundleListener {
         //This is to shutdown Camel context
         //(will stop all routes/components/endpoints etc and clear internal state/cache)
         this.camelContext.stop();
-        this.repository.stop();
+//        this.repository.stop();
     }
 
     public void setBundleContext(BundleContext bundleContext) {
@@ -140,13 +136,13 @@ public class EventKafkaContext implements SynchronousBundleListener {
         this.objectMapper = objectMapper;
     }
 
-    public void setSegmentListener(SegmentListener segmentListener) {
-        this.segmentListener = segmentListener;
-    }
-
-    public void setRedisCluster(String redisCluster) {
-        this.redisCluster = redisCluster;
-    }
+//    public void setSegmentListener(SegmentListener segmentListener) {
+//        this.segmentListener = segmentListener;
+//    }
+//
+//    public void setRedisCluster(String redisCluster) {
+//        this.redisCluster = redisCluster;
+//    }
 
     public static class KafkaEventBufferProducer implements BufferEventProcessingAction.EventBuffer {
         private ProducerTemplate producer;
