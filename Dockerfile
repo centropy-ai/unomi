@@ -27,8 +27,8 @@ ENV ELASTICSEARCH_HOST localhost
 ENV ELASTICSEARCH_PORT 9300
 RUN apt-get update -y
 RUN apt-get install maven -y
-#COPY . /apache-unomi
-#RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
+COPY . /apache-unomi
+RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
 COPY ./package/target/assembly/ $UNOMI_HOME
 #ENV UNOMI_VERSION "1.5.0-SNAPSHOT"
 
