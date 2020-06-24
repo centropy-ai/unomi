@@ -56,7 +56,7 @@
 <!--        <property name="redisCluster" value="${redis.cluster}"/>-->
     </bean>
 
-    <reference id="profileService" interface="org.apache.unomi.api.services.ProfileService"/>
+<!--    <reference id="profileService" interface="org.apache.unomi.api.services.ProfileService"/>-->
 <!--    <bean class="org.apache.unomi.operation.segment.SegmentListener" id="segmentListener">-->
 <!--        <property name="profileService" ref="profileService"/>-->
 <!--    </bean>-->
