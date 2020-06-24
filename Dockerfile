@@ -27,19 +27,8 @@ ENV ELASTICSEARCH_HOST localhost
 ENV ELASTICSEARCH_PORT 9300
 RUN apt-get update -y
 RUN apt-get install maven -y
-COPY . /apache-unomi
-RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
-COPY ./package/target/assembly/ $UNOMI_HOME
-#ENV UNOMI_VERSION "1.5.0-SNAPSHOT"
-
 WORKDIR $UNOMI_HOME
-
-#RUN wget http://apache.mirrors.pair.com/unomi/${UNOMI_VERSION}/unomi-${UNOMI_VERSION}-bin.tar.gz
-#
-#RUN tar -xzf unomi-${UNOMI_VERSION}-bin.tar.gz \
-#	&& mv unomi-*/* . \
-#	&& rm -rf unomi-*
-#
+COPY ./package/target/assembly/ $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
 
 COPY ./entrypoint.sh ./entrypoint.sh
