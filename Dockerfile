@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM unomi/primedata-dev:1.5
+FROM 146288359043.dkr.ecr.ap-southeast-1.amazonaws.com/unomi/primedata-dev:1.5
 
 # Unomi environment variables
 # ENV UNOMI_HOME /opt/apache-unomi
