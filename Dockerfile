@@ -15,25 +15,25 @@
 # limitations under the License.
 ################################################################################
 
-FROM openjdk:8-jdk
+FROM unomi/primedata:1.5
 
 # Unomi environment variables
-ENV UNOMI_HOME /opt/apache-unomi
-ENV PATH $PATH:$UNOMI_HOME/bin
+# ENV UNOMI_HOME /opt/apache-unomi
+# ENV PATH $PATH:$UNOMI_HOME/bin
 
-ENV KARAF_OPTS "-Dunomi.autoStart=true"
+# ENV KARAF_OPTS "-Dunomi.autoStart=true"
 
-ENV ELASTICSEARCH_HOST localhost
-ENV ELASTICSEARCH_PORT 9300
-RUN apt-get update -y
-RUN apt-get install maven -y
+# ENV ELASTICSEARCH_HOST localhost
+# ENV ELASTICSEARCH_PORT 9300
+# RUN apt-get update -y
+# RUN apt-get install maven -y
 COPY . /apache-unomi
 RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
 WORKDIR $UNOMI_HOME
 RUN cp -r /apache-unomi/package/target/assembly/* $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
 
-COPY ./entrypoint.sh ./entrypoint.sh
+# COPY ./entrypoint.sh ./entrypoint.sh
 
 EXPOSE 9443
 EXPOSE 8181
