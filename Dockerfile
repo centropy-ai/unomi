@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM unomi/primedata:1.5
+FROM unomi/primedata-dev:1.5
 
 # Unomi environment variables
 # ENV UNOMI_HOME /opt/apache-unomi
