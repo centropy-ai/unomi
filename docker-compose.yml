@@ -45,7 +45,9 @@ services:
     networks:
       - kong-net
   unomi:
-    build: .
+    build:
+      dockerfile: Local.Dockerfile
+      context: .
     environment:
       - ELASTICSEARCH_HOST=elasticsearch
       - ELASTICSEARCH_PORT=9200
@@ -53,6 +55,7 @@ services:
       - UNOMI_ROOT_PASSWORD=paulaan.me
       - KAFKA_BROKERS=kafka:9093
       - KAFKA_TOPIC=eventify-event
+      - REDIS_CLUSTER=redis://redis-cluster:7000,redis://redis-cluster:7001
     links:
       - elasticsearch
     depends_on:
@@ -61,6 +64,20 @@ services:
       - kong-net
     ports:
     - "8282:8181"
+  redis-cluster:
+    environment:
+      IP: ${REDIS_CLUSTER_IP}
+      SENTINEL: ${REDIS_USE_SENTINEL}
+      STANDALONE: ${REDIS_USE_STANDALONE}
+    build:
+      context: ./redis-docker
+      args:
+        redis_version: '6.0.1'
+    hostname: server
+    ports:
+      - '7000-7050:7000-7050'
+      - '5000-5010:5000-5010'
+
   kong-migrations:
     image: "${KONG_DOCKER_TAG:-kong:latest}"
     command: kong migrations bootstrap
@@ -145,6 +162,8 @@ services:
       - kong-net
     volumes:
       - kong_data:/var/lib/postgresql/data
+    ports:
+    - 5434:5432
 
   konga:
     image: pantsel/konga
