@@ -30,6 +30,7 @@ RUN apt-get install maven -y
 WORKDIR $UNOMI_HOME
 COPY ./package/target/assembly/ $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
+COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 
 COPY ./entrypoint.sh ./entrypoint.sh
 

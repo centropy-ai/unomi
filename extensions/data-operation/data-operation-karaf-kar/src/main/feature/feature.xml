@@ -17,8 +17,9 @@
   -->
 <features xmlns="http://karaf.apache.org/xmlns/features/v1.2.1" name="data-operation-karaf-feature">
     <feature name="data-operation-karaf-kar" version="${project.version}"
-             description="MetaRouter :: Extensions :: Data Operation">
-        <details>Connect Apache Unomi to PrimeData</details>
+             description="Apache Unomi :: Extensions :: Data Operation">
+        <details>Connect Apache Unomi to Kafka</details>
+        <configfile finalname="/etc/org.apache.unomi.operation.cfg">mvn:org.apache.unomi/data-operation-actions/${project.version}/cfg/operationcfg</configfile>
         <bundle start-level="90">mvn:org.apache.unomi/data-operation-actions/${project.version}</bundle>
     </feature>
 </features>

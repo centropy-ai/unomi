@@ -202,7 +202,7 @@
                                         src/main/resources/org.apache.unomi.operation.cfg
                                     </file>
                                     <type>cfg</type>
-                                    <classifier>routercfg</classifier>
+                                    <classifier>operationcfg</classifier>
                                 </artifact>
                             </artifacts>
                         </configuration>

@@ -186,10 +186,10 @@ Unomi.prototype.identify = function(identify) {
 Unomi.prototype.track = function(track) {
     // we use the track event name to know that we are submitted a form because Analytics.js trackForm method doesn't give
     // us another way of knowing that we are processing a form.
-    var properties = track.properties();
-    var target = properties.track || this.buildTargetPage();
-    var source = properties.source || this.buildSource(location.href, 'page', window.digitalData.page);
-    var props = properties.props;
+    var arg = track.properties();
+    var target = arg.track || this.buildTargetPage();
+    var source = arg.source || this.buildSource(location.href, 'page', window.digitalData.page);
+    var props = arg.properties;
     if (track.event() && track.event().indexOf("form") === 0) {
         var form = document.forms[track.properties().formName];
         var formEvent = this.buildFormEvent(form.name);
