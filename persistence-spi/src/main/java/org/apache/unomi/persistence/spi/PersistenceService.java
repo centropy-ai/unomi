@@ -19,6 +19,7 @@ package org.apache.unomi.persistence.spi;
 
 import org.apache.unomi.api.Item;
 import org.apache.unomi.api.PartialList;
+import org.apache.unomi.api.PropertyType;
 import org.apache.unomi.api.conditions.Condition;
 import org.apache.unomi.persistence.spi.aggregate.BaseAggregate;
 
@@ -206,6 +207,13 @@ public interface PersistenceService {
      */
     Map<String, Object> getPropertyMapping(String property, String itemType);
 
+    /**
+     * Create the persistence mapping for specific property for a given type.
+     *
+     * @param property the PropertyType to create mapping for
+     * @param itemType the itemType we want to retrieve the mappings for
+     */
+    void setPropertyMapping(PropertyType property, String itemType);
 
     /**
      * Create mapping
@@ -441,6 +449,15 @@ public interface PersistenceService {
      * Updates the persistence's engine indices if needed.
      */
     void refresh();
+
+    /**
+     * Updates the persistence's engine specific index.
+     *
+     * @param clazz will use an index by class type
+     * @param dateHint for index with time, can be null
+     * @param <T> a class that extends Item
+     */
+    <T extends Item> void refreshIndex(Class<T> clazz, Date dateHint);
 
     /**
      * Purges all data in the context server up to the specified date, not included.
