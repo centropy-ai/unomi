@@ -1,10 +1,7 @@
 {
-  "name": "unomi-analytics",
+  "name": "prime-analytics",
   "version": "1.0.5",
-  "description": "The Apache Unomi analytics.js integration.",
-  "main": "dist/unomi-tracker.js",
   "keywords": [
-    "unomi",
     "analytics.js",
     "apache"
   ],
@@ -12,16 +9,16 @@
   "license": "Apache-2.0",
   "scripts": {
     "build": "yarn browserify && yarn replace && yarn minify",
-    "browserify": "browserify src/index.js -p [ browserify-header --file src/license.js ] -s follower -o dist/unomi-tracker.js",
-    "replace": "replace-in-file 'analytics.require = require' '//analytics.require = require' dist/unomi-tracker.js",
-    "minify": "uglifyjs -c -m --comments '/@license/' -o dist/unomi-tracker.min.js -- dist/unomi-tracker.js",
+    "browserify": "browserify src/index.js  -s analytics -o dist/miner.js",
+    "replace": "replace-in-file 'analytics.require = require' '//analytics.require = require' dist/miner.js",
+    "minify": "uglifyjs -c -m --comments '/@license/' -o dist/miner.min.js -- dist/miner.js",
     "snippet:minify": "uglifyjs -c -m -o snippet.min.js --source-map snippet.min.js.map -- snippet.js",
-    "clean": "rimraf *.log dist/unomi-tracker.js dist/unomi-tracker.min.js",
+    "clean": "rimraf *.log dist/miner.js dist/miner.min.js",
     "clean:all": "yarn clean && rimraf node_modules"
   },
   "dependencies": {
-    "@segment/analytics.js-core": "3.7.2",
-    "@segment/analytics.js-integration": "2.1.1",
+    "@segment/analytics.js-core": "3.10.1",
+    "@segment/analytics.js-integration": "^3.2.1",
     "extend": "^3.0.2",
     "utm-params-saver": "^1.0.15"
   },

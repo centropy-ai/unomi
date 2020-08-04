@@ -19,7 +19,7 @@
 var integration = require('@segment/analytics.js-integration');
 var extend  = require('extend');
 
-var Unomi = (module.exports = integration('Apache Unomi')
+var Prime = (module.exports = integration('Prime Data')
     .global('cxs')
     .assumesPageview()
     .readyOnLoad()
@@ -36,11 +36,8 @@ var Unomi = (module.exports = integration('Apache Unomi')
  *
  * @api public
  */
-Unomi.prototype.initialize = function() {
+Prime.prototype.initialize = function() {
     var self = this;
-
-    console.info('[Tracker] Initializing...', arguments);
-
     this.analytics.on('invoke', function(msg) {
         var action = msg.action();
         var listener = 'on' + msg.action();
@@ -71,17 +68,17 @@ Unomi.prototype.initialize = function() {
         }
     }
 
-    var unomiPage = window.digitalData.page;
+    var primePage = window.digitalData.page;
     var context = this.context();
-    if (!unomiPage) {
-        unomiPage = window.digitalData.page = { pageInfo:{} }
+    if (!primePage) {
+        primePage = window.digitalData.page = { pageInfo:{} }
     }
     if (self.options.initialPageProperties) {
         var props = self.options.initialPageProperties;
-        this.fillPageData(unomiPage, props);
+        this.fillPageData(primePage, props);
     }
     window.digitalData.events = window.digitalData.events || [];
-    window.digitalData.events.push(this.buildEvent('view', this.buildPage(unomiPage), this.buildSource(location.href, 'page', context)))
+    window.digitalData.events.push(this.buildEvent('view', this.buildPage(primePage), this.buildSource(location.href, 'page', context)))
 
     this.extendSessionID()
     setTimeout(self.loadContext.bind(self), 0);
@@ -93,7 +90,7 @@ Unomi.prototype.initialize = function() {
  * @api private
  * @return {boolean}
  */
-Unomi.prototype.loaded = function() {
+Prime.prototype.loaded = function() {
     return !!window.cxs;
 };
 
@@ -103,27 +100,27 @@ Unomi.prototype.loaded = function() {
  * @api public
  * @param {Page} page
  */
-Unomi.prototype.page = function(page) {
-    var unomiPage = { };
-    this.fillPageData(unomiPage, page.json().properties);
+Prime.prototype.page = function(page) {
+    var primePage = { };
+    this.fillPageData(primePage, page.json().properties);
 
-    this.collectEvent(this.buildEvent('view', this.buildPage(unomiPage), this.buildSource(location.href, 'page')));
+    this.collectEvent(this.buildEvent('view', this.buildPage(primePage), this.buildSource(location.href, 'page')));
 };
 
-Unomi.prototype.fillPageData = function(unomiPage, props) {
-    unomiPage.attributes = [];
-    unomiPage.consentTypes = [];
-    unomiPage.interests = props.interests || {};
-    unomiPage.pageInfo = extend({}, unomiPage.pageInfo, props.pageInfo);
-    unomiPage.pageInfo.pageName = unomiPage.pageInfo.pageName || props.title;
-    unomiPage.pageInfo.pagePath = unomiPage.pageInfo.pagePath || props.path;
-    unomiPage.pageInfo.pagePath = unomiPage.pageInfo.pagePath || props.path;
-    unomiPage.pageInfo.destinationURL = unomiPage.pageInfo.destinationURL || props.url;
-    unomiPage.pageInfo.referringURL = document.referrer;
+Prime.prototype.fillPageData = function(primePage, props) {
+    primePage.attributes = [];
+    primePage.consentTypes = [];
+    primePage.interests = props.interests || {};
+    primePage.pageInfo = extend({}, primePage.pageInfo, props.pageInfo);
+    primePage.pageInfo.pageName = primePage.pageInfo.pageName || props.title;
+    primePage.pageInfo.pagePath = primePage.pageInfo.pagePath || props.path;
+    primePage.pageInfo.pagePath = primePage.pageInfo.pagePath || props.path;
+    primePage.pageInfo.destinationURL = primePage.pageInfo.destinationURL || props.url;
+    primePage.pageInfo.referringURL = document.referrer;
     this.processReferrer();
 };
 
-Unomi.prototype.processReferrer = function() {
+Prime.prototype.processReferrer = function() {
     var referrerURL = document.referrer;
     if (referrerURL) {
         // parse referrer URL
@@ -171,7 +168,7 @@ Unomi.prototype.processReferrer = function() {
  * @api public
  * @param {Identify} identify
  */
-Unomi.prototype.identify = function(identify) {
+Prime.prototype.identify = function(identify) {
     this.collectEvent(this.buildEvent("identify",
         this.buildTarget(identify.userId(), "analyticsUser", identify.traits()),
         this.buildSource(location.href, 'page', identify.context())));
@@ -183,7 +180,7 @@ Unomi.prototype.identify = function(identify) {
  * @api private
  * @param {Track} track
  */
-Unomi.prototype.track = function(track) {
+Prime.prototype.track = function(track) {
     // we use the track event name to know that we are submitted a form because Analytics.js trackForm method doesn't give
     // us another way of knowing that we are processing a form.
     var arg = track.properties();
@@ -210,7 +207,7 @@ Unomi.prototype.track = function(track) {
  * @param {boolean} [skipEvents=false] Should we send the events
  * @param {boolean} [invalidate=false] Should we invalidate the current context
  */
-Unomi.prototype.loadContext = function (skipEvents, invalidate) {
+Prime.prototype.loadContext = function (skipEvents, invalidate) {
     this.extendSessionID();
     this.contextLoaded = true;
     var context = this.context();
@@ -272,7 +269,7 @@ Unomi.prototype.loadContext = function (skipEvents, invalidate) {
     console.info('[Tracker] Context loading...');
 };
 
-Unomi.prototype.onpersonalize = function (msg) {
+Prime.prototype.onpersonalize = function (msg) {
     if (this.contextLoaded) {
         console.error('[Tracker] Already loaded, too late...');
         return;
@@ -293,7 +290,7 @@ Unomi.prototype.onpersonalize = function (msg) {
  * @param {object} [properties] a map of properties for the event
  * @returns {{eventType: *, scope}}
  */
-Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
+Prime.prototype.buildEvent = function (eventType, target, source, properties) {
     var event = {
         eventType: eventType,
         scope: window.digitalData.scope,
@@ -321,7 +318,7 @@ Unomi.prototype.buildEvent = function (eventType, target, source, properties) {
  * @param {string} formName The HTML name of id of the form to use in the target of the event
  * @returns {*|{eventType: *, scope, source: {scope, itemId: string, itemType: string, properties: {}}, target: {scope, itemId: string, itemType: string, properties: {}}}}
  */
-Unomi.prototype.buildFormEvent = function (formName) {
+Prime.prototype.buildFormEvent = function (formName) {
     return this.buildEvent('form', this.buildTarget(formName, 'form'), this.buildSourcePage());
 };
 
@@ -330,7 +327,7 @@ Unomi.prototype.buildFormEvent = function (formName) {
  *
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
-Unomi.prototype.buildTargetPage = function () {
+Prime.prototype.buildTargetPage = function () {
     return this.buildTarget(window.digitalData.page.pageInfo.pagePath, 'page');
 };
 
@@ -339,7 +336,7 @@ Unomi.prototype.buildTargetPage = function () {
  *
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
-Unomi.prototype.buildSourcePage = function () {
+Prime.prototype.buildSourcePage = function () {
     return this.buildSource(window.digitalData.page.pageInfo.pagePath, 'page', window.digitalData.page);
 };
 
@@ -349,7 +346,7 @@ Unomi.prototype.buildSourcePage = function () {
  *
  * @returns {*|{scope, itemId: *, itemType: *}}
  */
-Unomi.prototype.buildPage = function (page) {
+Prime.prototype.buildPage = function (page) {
     return this.buildSource(page.pageInfo.pagePath, 'page', page);
 };
 
@@ -361,7 +358,7 @@ Unomi.prototype.buildPage = function (page) {
  * @param {object} [targetProperties] The optional properties of the target
  * @returns {{scope, itemId: *, itemType: *}}
  */
-Unomi.prototype.buildTarget = function (targetId, targetType, targetProperties) {
+Prime.prototype.buildTarget = function (targetId, targetType, targetProperties) {
     return this.buildObject(targetId, targetType, targetProperties);
 };
 
@@ -373,29 +370,29 @@ Unomi.prototype.buildTarget = function (targetId, targetType, targetProperties) 
  * @param {object} [sourceProperties] The optional properties of the source
  * @returns {{scope, itemId: *, itemType: *}}
  */
-Unomi.prototype.buildSource = function (sourceId, sourceType, sourceProperties) {
+Prime.prototype.buildSource = function (sourceId, sourceType, sourceProperties) {
     return this.buildObject(sourceId, sourceType, sourceProperties);
 };
 
 
 /**
- * This function will send an event to Apache Unomi
+ * This function will send an event to Prime Data
  * @param {object} event The event object to send, you can build it using this.buildEvent(eventType, target, source)
  * @param {function} successCallback will be executed in case of success
  * @param {function} errorCallback will be executed in case of error
  */
-Unomi.prototype.collectEvent = function (event, successCallback, errorCallback) {
+Prime.prototype.collectEvent = function (event, successCallback, errorCallback) {
     this.collectEvents({events: [event]}, successCallback, errorCallback);
 };
 
 /**
- * This function will send the events to Apache Unomi
+ * This function will send the events to Prime Data
  *
  * @param {object} events Javascript object { events: [event1, event2] }
  * @param {function} successCallback will be executed in case of success
  * @param {function} errorCallback will be executed in case of error
  */
-Unomi.prototype.collectEvents = function (events, successCallback, errorCallback) {
+Prime.prototype.collectEvents = function (events, successCallback, errorCallback) {
     events.sessionId = this.sessionId;
 
     var data = JSON.stringify(events);
@@ -415,7 +412,7 @@ Unomi.prototype.collectEvents = function (events, successCallback, errorCallback
 /* Private Function under this */
 /*******************************/
 
-Unomi.prototype.registerEvent = function (event) {
+Prime.prototype.registerEvent = function (event) {
     if (window.digitalData) {
         if (window.cxs) {
             console.error('[Tracker] already loaded, too late...');
@@ -430,7 +427,7 @@ Unomi.prototype.registerEvent = function (event) {
     }
 };
 
-Unomi.prototype.registerCallback = function (onLoadCallback) {
+Prime.prototype.registerCallback = function (onLoadCallback) {
     if (window.digitalData) {
         if (window.cxs) {
             console.info('[Tracker] digitalData object loaded, calling on load callback immediately and registering update callback...');
@@ -459,7 +456,7 @@ Unomi.prototype.registerCallback = function (onLoadCallback) {
  *
  * @returns {string}
  */
-Unomi.prototype.generateGuid = function () {
+Prime.prototype.generateGuid = function () {
     function s4() {
         return Math.floor((1 + Math.random()) * 0x10000)
             .toString(16)
@@ -470,7 +467,7 @@ Unomi.prototype.generateGuid = function () {
         s4() + '-' + s4() + s4() + s4();
 };
 
-Unomi.prototype.buildObject = function (itemId, itemType, properties) {
+Prime.prototype.buildObject = function (itemId, itemType, properties) {
     var object = {
         scope: window.digitalData.scope,
         itemId: itemId,
@@ -489,7 +486,7 @@ Unomi.prototype.buildObject = function (itemId, itemType, properties) {
  *
  * @param {object} ajaxOptions
  */
-Unomi.prototype.ajax = function (ajaxOptions) {
+Prime.prototype.ajax = function (ajaxOptions) {
     var xhr = new XMLHttpRequest();
     if ('withCredentials' in xhr) {
         xhr.open(ajaxOptions.type, ajaxOptions.url, ajaxOptions.async);
@@ -555,7 +552,7 @@ Unomi.prototype.ajax = function (ajaxOptions) {
     }
 };
 
-Unomi.prototype.executeFallback = function () {
+Prime.prototype.executeFallback = function () {
     console.warn('[Tracker] execute fallback');
     window.cxs = {};
     for (var index in window.digitalData.loadCallbacks) {
@@ -568,7 +565,7 @@ Unomi.prototype.executeFallback = function () {
     }
 };
 
-Unomi.prototype.extendSessionID = function(){
+Prime.prototype.extendSessionID = function(){
     if (!this.options.sessionId) {
         var cookie = require('component-cookie');
 
@@ -583,7 +580,7 @@ Unomi.prototype.extendSessionID = function(){
     cookie(this.options.sessionCookieName, this.sessionId, {maxage: this.options.sessionTimeOut});
 }
 
-Unomi.prototype.context = function () {
+Prime.prototype.context = function () {
     var utm = require('utm-params-saver');
     var width = window.innerWidth
         || document.documentElement.clientWidth
@@ -600,7 +597,7 @@ Unomi.prototype.context = function () {
     return data
 }
 
-Unomi.prototype.extractFormData = function (form) {
+Prime.prototype.extractFormData = function (form) {
     var params = {};
     for (var i = 0; i < form.elements.length; i++) {
         var e = form.elements[i];

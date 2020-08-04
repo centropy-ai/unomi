@@ -14115,11 +14115,11 @@ module.exports={
   "license": "Apache-2.0",
   "scripts": {
     "build": "yarn browserify && yarn replace && yarn minify",
-    "browserify": "browserify src/index.js  -s analytics -o dist/unomi-tracker.js",
-    "replace": "replace-in-file 'analytics.require = require' '//analytics.require = require' dist/unomi-tracker.js",
-    "minify": "uglifyjs -c -m --comments '/@license/' -o dist/unomi-tracker.min.js -- dist/unomi-tracker.js",
+    "browserify": "browserify src/index.js  -s analytics -o dist/miner.js",
+    "replace": "replace-in-file 'analytics.require = require' '//analytics.require = require' dist/miner.js",
+    "minify": "uglifyjs -c -m --comments '/@license/' -o dist/miner.min.js -- dist/miner.js",
     "snippet:minify": "uglifyjs -c -m -o snippet.min.js --source-map snippet.min.js.map -- snippet.js",
-    "clean": "rimraf *.log dist/unomi-tracker.js dist/unomi-tracker.min.js",
+    "clean": "rimraf *.log dist/miner.js dist/miner.min.js",
     "clean:all": "yarn clean && rimraf node_modules"
   },
   "dependencies": {

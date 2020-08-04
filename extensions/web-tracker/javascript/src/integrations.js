@@ -18,5 +18,5 @@
 'use strict';
 
 module.exports = {
-    'apache-unomi': require('./analytics.js-integration-apache-unomi')
+    'prime-data': require('./analytics.js-integration-prime-data')
 };
