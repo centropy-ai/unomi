@@ -57,7 +57,7 @@ var clone = function clone(obj) {
 
 module.exports = clone;
 
-},{"component-type":55}],2:[function(require,module,exports){
+},{"component-type":59}],2:[function(require,module,exports){
 'use strict';
 
 /*
@@ -949,13 +949,11 @@ module.exports = rest;
 },{}],13:[function(require,module,exports){
 (function (global){
 'use strict';
-
+Object.defineProperty(exports, "__esModule", { value: true });
 var _analytics = global.analytics;
-
 /*
  * Module dependencies.
  */
-
 var Alias = require('segmentio-facade').Alias;
 var Emitter = require('component-emitter');
 var Facade = require('segmentio-facade');
@@ -963,17 +961,19 @@ var Group = require('segmentio-facade').Group;
 var Identify = require('segmentio-facade').Identify;
 var SourceMiddlewareChain = require('./middleware').SourceMiddlewareChain;
 var IntegrationMiddlewareChain = require('./middleware')
-  .IntegrationMiddlewareChain;
+    .IntegrationMiddlewareChain;
+var DestinationMiddlewareChain = require('./middleware')
+    .DestinationMiddlewareChain;
 var Page = require('segmentio-facade').Page;
 var Track = require('segmentio-facade').Track;
 var bindAll = require('bind-all');
-var clone = require('@ndhoule/clone');
+var clone = require('./utils/clone');
 var extend = require('extend');
 var cookie = require('./cookie');
 var metrics = require('./metrics');
 var debug = require('debug');
 var defaults = require('@ndhoule/defaults');
-var each = require('@ndhoule/each');
+var each = require('./utils/each');
 var foldl = require('@ndhoule/foldl');
 var group = require('./group');
 var is = require('is');
@@ -990,238 +990,188 @@ var querystring = require('component-querystring');
 var store = require('./store');
 var user = require('./user');
 var type = require('component-type');
-
 /**
  * Initialize a new `Analytics` instance.
  */
-
 function Analytics() {
-  this._options({});
-  this.Integrations = {};
-  this._sourceMiddlewares = new SourceMiddlewareChain();
-  this._integrationMiddlewares = new IntegrationMiddlewareChain();
-  this._integrations = {};
-  this._readied = false;
-  this._timeout = 300;
-  // XXX: BACKWARDS COMPATIBILITY
-  this._user = user;
-  this.log = debug('analytics.js');
-  bindAll(this);
-
-  var self = this;
-  this.on('initialize', function(settings, options) {
-    if (options.initialPageview) self.page();
-    self._parseQuery(window.location.search);
-  });
+    this._options({});
+    this.Integrations = {};
+    this._sourceMiddlewares = new SourceMiddlewareChain();
+    this._integrationMiddlewares = new IntegrationMiddlewareChain();
+    this._destinationMiddlewares = {};
+    this._integrations = {};
+    this._readied = false;
+    this._timeout = 300;
+    // XXX: BACKWARDS COMPATIBILITY
+    this._user = user;
+    this.log = debug('analytics.js');
+    bindAll(this);
+    var self = this;
+    this.on('initialize', function (settings, options) {
+        if (options.initialPageview)
+            self.page();
+        self._parseQuery(window.location.search);
+    });
 }
-
 /**
  * Mix in event emitter.
  */
-
 Emitter(Analytics.prototype);
-
 /**
  * Use a `plugin`.
- *
- * @param {Function} plugin
- * @return {Analytics}
  */
-
-Analytics.prototype.use = function(plugin) {
-  plugin(this);
-  return this;
+Analytics.prototype.use = function (plugin) {
+    plugin(this);
+    return this;
 };
-
 /**
  * Define a new `Integration`.
- *
- * @param {Function} Integration
- * @return {Analytics}
  */
-
-Analytics.prototype.addIntegration = function(Integration) {
-  var name = Integration.prototype.name;
-  if (!name) throw new TypeError('attempted to add an invalid integration');
-  this.Integrations[name] = Integration;
-  return this;
+Analytics.prototype.addIntegration = function (Integration) {
+    var name = Integration.prototype.name;
+    if (!name)
+        throw new TypeError('attempted to add an invalid integration');
+    this.Integrations[name] = Integration;
+    return this;
 };
-
 /**
  * Define a new `SourceMiddleware`
- *
- * @param {Function} Middleware
- * @return {Analytics}
  */
-
-Analytics.prototype.addSourceMiddleware = function(middleware) {
-  if (this.initialized)
-    throw new Error(
-      'attempted to add a source middleware after initialization'
-    );
-
-  this._sourceMiddlewares.add(middleware);
-  return this;
+Analytics.prototype.addSourceMiddleware = function (middleware) {
+    this._sourceMiddlewares.add(middleware);
+    return this;
 };
-
 /**
  * Define a new `IntegrationMiddleware`
- *
- * @param {Function} Middleware
- * @return {Analytics}
+ * @deprecated
  */
-
-Analytics.prototype.addIntegrationMiddleware = function(middleware) {
-  if (this.initialized)
-    throw new Error(
-      'attempted to add an integration middleware after initialization'
-    );
-
-  this._integrationMiddlewares.add(middleware);
-  return this;
+Analytics.prototype.addIntegrationMiddleware = function (middleware) {
+    this._integrationMiddlewares.add(middleware);
+    return this;
 };
-
+/**
+ * Define a new `DestinationMiddleware`
+ * Destination Middleware is chained after integration middleware
+ */
+// TODO remove `unknown`
+Analytics.prototype.addDestinationMiddleware = function (integrationName, middlewares) {
+    var self = this;
+    middlewares.forEach(function (middleware) {
+        if (!self._destinationMiddlewares[integrationName]) {
+            self._destinationMiddlewares[integrationName] = new DestinationMiddlewareChain();
+        }
+        self._destinationMiddlewares[integrationName].add(middleware);
+    });
+    return self;
+};
 /**
  * Initialize with the given integration `settings` and `options`.
  *
  * Aliased to `init` for convenience.
- *
- * @param {Object} [settings={}]
- * @param {Object} [options={}]
- * @return {Analytics}
  */
-
-Analytics.prototype.init = Analytics.prototype.initialize = function(
-  settings,
-  options
-) {
-  settings = settings || {};
-  options = options || {};
-
-  this._options(options);
-  this._readied = false;
-
-  // clean unknown integrations from settings
-  var self = this;
-  each(function(opts, name) {
-    var Integration = self.Integrations[name];
-    if (!Integration) delete settings[name];
-  }, settings);
-
-  // add integrations
-  each(function(opts, name) {
-    // Don't load disabled integrations
-    if (options.integrations) {
-      if (
-        options.integrations[name] === false ||
-        (options.integrations.All === false && !options.integrations[name])
-      ) {
-        return;
-      }
-    }
-
-    var Integration = self.Integrations[name];
-    var clonedOpts = {};
-    extend(true, clonedOpts, opts); // deep clone opts
-    var integration = new Integration(clonedOpts);
-    self.log('initialize %o - %o', name, opts);
-    self.add(integration);
-  }, settings);
-
-  var integrations = this._integrations;
-
-  // load user now that options are set
-  user.load();
-  group.load();
-
-  // make ready callback
-  var readyCallCount = 0;
-  var integrationCount = keys(integrations).length;
-  var ready = function() {
-    readyCallCount++;
-    if (readyCallCount >= integrationCount) {
-      self._readied = true;
-      self.emit('ready');
-    }
-  };
-
-  // init if no integrations
-  if (integrationCount <= 0) {
-    ready();
-  }
-
-  // initialize integrations, passing ready
-  // create a list of any integrations that did not initialize - this will be passed with all events for replay support:
-  this.failedInitializations = [];
-  var initialPageSkipped = false;
-  each(function(integration) {
-    if (
-      options.initialPageview &&
-      integration.options.initialPageview === false
-    ) {
-      // We've assumed one initial pageview, so make sure we don't count the first page call.
-      var page = integration.page;
-      integration.page = function() {
-        if (initialPageSkipped) {
-          return page.apply(this, arguments);
+Analytics.prototype.init = Analytics.prototype.initialize = function (settings, options) {
+    settings = settings || {};
+    options = options || {};
+    this._options(options);
+    this._readied = false;
+    // clean unknown integrations from settings
+    var self = this;
+    each(function (_opts, name) {
+        var Integration = self.Integrations[name];
+        if (!Integration)
+            delete settings[name];
+    }, settings);
+    // add integrations
+    each(function (opts, name) {
+        // Don't load disabled integrations
+        if (options.integrations) {
+            if (options.integrations[name] === false ||
+                (options.integrations.All === false && !options.integrations[name])) {
+                return;
+            }
         }
-        initialPageSkipped = true;
-        return;
-      };
+        var Integration = self.Integrations[name];
+        var clonedOpts = {};
+        extend(true, clonedOpts, opts); // deep clone opts
+        var integration = new Integration(clonedOpts);
+        self.log('initialize %o - %o', name, opts);
+        self.add(integration);
+    }, settings);
+    var integrations = this._integrations;
+    // load user now that options are set
+    user.load();
+    group.load();
+    // make ready callback
+    var readyCallCount = 0;
+    var integrationCount = keys(integrations).length;
+    var ready = function () {
+        readyCallCount++;
+        if (readyCallCount >= integrationCount) {
+            self._readied = true;
+            self.emit('ready');
+        }
+    };
+    // init if no integrations
+    if (integrationCount <= 0) {
+        ready();
     }
-
-    integration.analytics = self;
-
-    integration.once('ready', ready);
-    try {
-      metrics.increment('analytics_js.integration.invoke', {
-        method: 'initialize',
-        integration_name: integration.name
-      });
-      integration.initialize();
-    } catch (e) {
-      var integrationName = integration.name;
-      metrics.increment('analytics_js.integration.invoke.error', {
-        method: 'initialize',
-        integration_name: integration.name
-      });
-      self.failedInitializations.push(integrationName);
-      self.log('Error initializing %s integration: %o', integrationName, e);
-      // Mark integration as ready to prevent blocking of anyone listening to analytics.ready()
-
-      integration.ready();
-    }
-  }, integrations);
-
-  // backwards compat with angular plugin and used for init logic checks
-  this.initialized = true;
-
-  this.emit('initialize', settings, options);
-  return this;
+    // initialize integrations, passing ready
+    // create a list of any integrations that did not initialize - this will be passed with all events for replay support:
+    this.failedInitializations = [];
+    var initialPageSkipped = false;
+    each(function (integration) {
+        if (options.initialPageview &&
+            integration.options.initialPageview === false) {
+            // We've assumed one initial pageview, so make sure we don't count the first page call.
+            var page = integration.page;
+            integration.page = function () {
+                if (initialPageSkipped) {
+                    return page.apply(this, arguments);
+                }
+                initialPageSkipped = true;
+                return;
+            };
+        }
+        integration.analytics = self;
+        integration.once('ready', ready);
+        try {
+            metrics.increment('analytics_js.integration.invoke', {
+                method: 'initialize',
+                integration_name: integration.name
+            });
+            integration.initialize();
+        }
+        catch (e) {
+            var integrationName = integration.name;
+            metrics.increment('analytics_js.integration.invoke.error', {
+                method: 'initialize',
+                integration_name: integration.name
+            });
+            self.failedInitializations.push(integrationName);
+            self.log('Error initializing %s integration: %o', integrationName, e);
+            // Mark integration as ready to prevent blocking of anyone listening to analytics.ready()
+            integration.ready();
+        }
+    }, integrations);
+    // backwards compat with angular plugin and used for init logic checks
+    this.initialized = true;
+    this.emit('initialize', settings, options);
+    return this;
 };
-
 /**
  * Set the user's `id`.
- *
- * @param {Mixed} id
  */
-
-Analytics.prototype.setAnonymousId = function(id) {
-  this.user().anonymousId(id);
-  return this;
+Analytics.prototype.setAnonymousId = function (id) {
+    this.user().anonymousId(id);
+    return this;
 };
-
 /**
  * Add an integration.
- *
- * @param {Integration} integration
  */
-
-Analytics.prototype.add = function(integration) {
-  this._integrations[integration.name] = integration;
-  return this;
+Analytics.prototype.add = function (integration) {
+    this._integrations[integration.name] = integration;
+    return this;
 };
-
 /**
  * Identify a user by optional `id` and `traits`.
  *
@@ -1231,48 +1181,42 @@ Analytics.prototype.add = function(integration) {
  * @param {Function} [fn]
  * @return {Analytics}
  */
-
-Analytics.prototype.identify = function(id, traits, options, fn) {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (is.object(id)) (options = traits), (traits = id), (id = user.id());
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // clone traits before we manipulate so we don't do anything uncouth, and take
-  // from `user` so that we carryover anonymous traits
-  user.identify(id, traits);
-
-  var msg = this.normalize({
-    options: options,
-    traits: user.traits(),
-    userId: user.id()
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  if (this.options.integrations) {
-    defaults(msg.integrations, this.options.integrations);
-  }
-
-  this._invoke('identify', new Identify(msg));
-
-  // emit
-  this.emit('identify', id, traits, options);
-  this._callback(fn);
-  return this;
+Analytics.prototype.identify = function (id, traits, options, fn) {
+    // Argument reshuffling.
+    /* eslint-disable no-unused-expressions, no-sequences */
+    if (is.fn(options))
+        (fn = options), (options = null);
+    if (is.fn(traits))
+        (fn = traits), (options = null), (traits = null);
+    if (is.object(id))
+        (options = traits), (traits = id), (id = user.id());
+    /* eslint-enable no-unused-expressions, no-sequences */
+    // clone traits before we manipulate so we don't do anything uncouth, and take
+    // from `user` so that we carryover anonymous traits
+    user.identify(id, traits);
+    var msg = this.normalize({
+        options: options,
+        traits: user.traits(),
+        userId: user.id()
+    });
+    // Add the initialize integrations so the server-side ones can be disabled too
+    if (this.options.integrations) {
+        defaults(msg.integrations, this.options.integrations);
+    }
+    this._invoke('identify', new Identify(msg));
+    // emit
+    this.emit('identify', id, traits, options);
+    this._callback(fn);
+    return this;
 };
-
 /**
  * Return the current user.
  *
  * @return {Object}
  */
-
-Analytics.prototype.user = function() {
-  return user;
+Analytics.prototype.user = function () {
+    return user;
 };
-
 /**
  * Identify a group by optional `id` and `traits`. Or, if no arguments are
  * supplied, return the current group.
@@ -1283,36 +1227,33 @@ Analytics.prototype.user = function() {
  * @param {Function} [fn]
  * @return {Analytics|Object}
  */
-
-Analytics.prototype.group = function(id, traits, options, fn) {
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (!arguments.length) return group;
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(traits)) (fn = traits), (options = null), (traits = null);
-  if (is.object(id)) (options = traits), (traits = id), (id = group.id());
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // grab from group again to make sure we're taking from the source
-  group.identify(id, traits);
-
-  var msg = this.normalize({
-    options: options,
-    traits: group.traits(),
-    groupId: group.id()
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  if (this.options.integrations) {
-    defaults(msg.integrations, this.options.integrations);
-  }
-
-  this._invoke('group', new Group(msg));
-
-  this.emit('group', id, traits, options);
-  this._callback(fn);
-  return this;
+Analytics.prototype.group = function (id, traits, options, fn) {
+    /* eslint-disable no-unused-expressions, no-sequences */
+    if (!arguments.length)
+        return group;
+    if (is.fn(options))
+        (fn = options), (options = null);
+    if (is.fn(traits))
+        (fn = traits), (options = null), (traits = null);
+    if (is.object(id))
+        (options = traits), (traits = id), (id = group.id());
+    /* eslint-enable no-unused-expressions, no-sequences */
+    // grab from group again to make sure we're taking from the source
+    group.identify(id, traits);
+    var msg = this.normalize({
+        options: options,
+        traits: group.traits(),
+        groupId: group.id()
+    });
+    // Add the initialize integrations so the server-side ones can be disabled too
+    if (this.options.integrations) {
+        defaults(msg.integrations, this.options.integrations);
+    }
+    this._invoke('group', new Group(msg));
+    this.emit('group', id, traits, options);
+    this._callback(fn);
+    return this;
 };
-
 /**
  * Track an `event` that a user has triggered with optional `properties`.
  *
@@ -1322,58 +1263,50 @@ Analytics.prototype.group = function(id, traits, options, fn) {
  * @param {Function} [fn]
  * @return {Analytics}
  */
-
-Analytics.prototype.track = function(event, properties, options, fn) {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(properties))
-    (fn = properties), (options = null), (properties = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  // figure out if the event is archived.
-  var plan = this.options.plan || {};
-  var events = plan.track || {};
-  var planIntegrationOptions = {};
-
-  // normalize
-  var msg = this.normalize({
-    properties: properties,
-    options: options,
-    event: event
-  });
-
-  // plan.
-  plan = events[event];
-  if (plan) {
-    this.log('plan %o - %o', event, plan);
-    if (plan.enabled === false) {
-      // Disabled events should always be sent to Segment.
-      planIntegrationOptions = { All: false, 'Segment.io': true };
-    } else {
-      planIntegrationOptions = plan.integrations || {};
+Analytics.prototype.track = function (event, properties, options, fn) {
+    // Argument reshuffling.
+    /* eslint-disable no-unused-expressions, no-sequences */
+    if (is.fn(options))
+        (fn = options), (options = null);
+    if (is.fn(properties))
+        (fn = properties), (options = null), (properties = null);
+    /* eslint-enable no-unused-expressions, no-sequences */
+    // figure out if the event is archived.
+    var plan = this.options.plan || {};
+    var events = plan.track || {};
+    var planIntegrationOptions = {};
+    // normalize
+    var msg = this.normalize({
+        properties: properties,
+        options: options,
+        event: event
+    });
+    // plan.
+    plan = events[event];
+    if (plan) {
+        this.log('plan %o - %o', event, plan);
+        if (plan.enabled === false) {
+            // Disabled events should always be sent to Segment.
+            planIntegrationOptions = { All: false, 'Segment.io': true };
+        }
+        else {
+            planIntegrationOptions = plan.integrations || {};
+        }
     }
-  } else {
-    var defaultPlan = events.__default || { enabled: true };
-    if (!defaultPlan.enabled) {
-      // Disabled events should always be sent to Segment.
-      planIntegrationOptions = { All: false, 'Segment.io': true };
+    else {
+        var defaultPlan = events.__default || { enabled: true };
+        if (!defaultPlan.enabled) {
+            // Disabled events should always be sent to Segment.
+            planIntegrationOptions = { All: false, 'Segment.io': true };
+        }
     }
-  }
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  defaults(
-    msg.integrations,
-    this._mergeInitializeAndPlanIntegrations(planIntegrationOptions)
-  );
-
-  this._invoke('track', new Track(msg));
-
-  this.emit('track', event, properties, options);
-  this._callback(fn);
-  return this;
+    // Add the initialize integrations so the server-side ones can be disabled too
+    defaults(msg.integrations, this._mergeInitializeAndPlanIntegrations(planIntegrationOptions));
+    this._invoke('track', new Track(msg));
+    this.emit('track', event, properties, options);
+    this._callback(fn);
+    return this;
 };
-
 /**
  * Helper method to track an outbound link that would normally navigate away
  * from the page before the analytics calls were sent.
@@ -1385,43 +1318,34 @@ Analytics.prototype.track = function(event, properties, options, fn) {
  * @param {Object|Function} properties (optional)
  * @return {Analytics}
  */
-
-Analytics.prototype.trackClick = Analytics.prototype.trackLink = function(
-  links,
-  event,
-  properties
-) {
-  if (!links) return this;
-  // always arrays, handles jquery
-  if (type(links) === 'element') links = [links];
-
-  var self = this;
-  each(function(el) {
-    if (type(el) !== 'element') {
-      throw new TypeError('Must pass HTMLElement to `analytics.trackLink`.');
-    }
-    on(el, 'click', function(e) {
-      var ev = is.fn(event) ? event(el) : event;
-      var props = is.fn(properties) ? properties(el) : properties;
-      var href =
-        el.getAttribute('href') ||
-        el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
-        el.getAttribute('xlink:href');
-
-      self.track(ev, props);
-
-      if (href && el.target !== '_blank' && !isMeta(e)) {
-        prevent(e);
-        self._callback(function() {
-          window.location.href = href;
+Analytics.prototype.trackClick = Analytics.prototype.trackLink = function (links, event, properties) {
+    if (!links)
+        return this;
+    // always arrays, handles jquery
+    if (type(links) === 'element')
+        links = [links];
+    var self = this;
+    each(function (el) {
+        if (type(el) !== 'element') {
+            throw new TypeError('Must pass HTMLElement to `analytics.trackLink`.');
+        }
+        on(el, 'click', function (e) {
+            var ev = is.fn(event) ? event(el) : event;
+            var props = is.fn(properties) ? properties(el) : properties;
+            var href = el.getAttribute('href') ||
+                el.getAttributeNS('http://www.w3.org/1999/xlink', 'href') ||
+                el.getAttribute('xlink:href');
+            self.track(ev, props);
+            if (href && el.target !== '_blank' && !isMeta(e)) {
+                prevent(e);
+                self._callback(function () {
+                    window.location.href = href;
+                });
+            }
         });
-      }
-    });
-  }, links);
-
-  return this;
+    }, links);
+    return this;
 };
-
 /**
  * Helper method to track an outbound form that would normally navigate away
  * from the page before the analytics calls were sent.
@@ -1433,45 +1357,37 @@ Analytics.prototype.trackClick = Analytics.prototype.trackLink = function(
  * @param {Object|Function} properties (optional)
  * @return {Analytics}
  */
-
-Analytics.prototype.trackSubmit = Analytics.prototype.trackForm = function(
-  forms,
-  event,
-  properties
-) {
-  if (!forms) return this;
-  // always arrays, handles jquery
-  if (type(forms) === 'element') forms = [forms];
-
-  var self = this;
-  each(function(el) {
-    if (type(el) !== 'element')
-      throw new TypeError('Must pass HTMLElement to `analytics.trackForm`.');
-    function handler(e) {
-      prevent(e);
-
-      var ev = is.fn(event) ? event(el) : event;
-      var props = is.fn(properties) ? properties(el) : properties;
-      self.track(ev, props);
-
-      self._callback(function() {
-        el.submit();
-      });
-    }
-
-    // Support the events happening through jQuery or Zepto instead of through
-    // the normal DOM API, because `el.submit` doesn't bubble up events...
-    var $ = window.jQuery || window.Zepto;
-    if ($) {
-      $(el).submit(handler);
-    } else {
-      on(el, 'submit', handler);
-    }
-  }, forms);
-
-  return this;
+Analytics.prototype.trackSubmit = Analytics.prototype.trackForm = function (forms, event, properties) {
+    if (!forms)
+        return this;
+    // always arrays, handles jquery
+    if (type(forms) === 'element')
+        forms = [forms];
+    var self = this;
+    each(function (el) {
+        if (type(el) !== 'element')
+            throw new TypeError('Must pass HTMLElement to `analytics.trackForm`.');
+        function handler(e) {
+            prevent(e);
+            var ev = is.fn(event) ? event(el) : event;
+            var props = is.fn(properties) ? properties(el) : properties;
+            self.track(ev, props);
+            self._callback(function () {
+                el.submit();
+            });
+        }
+        // Support the events happening through jQuery or Zepto instead of through
+        // the normal DOM API, because `el.submit` doesn't bubble up events...
+        var $ = window.jQuery || window.Zepto;
+        if ($) {
+            $(el).submit(handler);
+        }
+        else {
+            on(el, 'submit', handler);
+        }
+    }, forms);
+    return this;
 };
-
 /**
  * Trigger a pageview, labeling the current page with an optional `category`,
  * `name` and `properties`.
@@ -1483,74 +1399,66 @@ Analytics.prototype.trackSubmit = Analytics.prototype.trackForm = function(
  * @param {Function} [fn]
  * @return {Analytics}
  */
-
-Analytics.prototype.page = function(category, name, properties, options, fn) {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(properties)) (fn = properties), (options = properties = null);
-  if (is.fn(name)) (fn = name), (options = properties = name = null);
-  if (type(category) === 'object')
-    (options = name), (properties = category), (name = category = null);
-  if (type(name) === 'object')
-    (options = properties), (properties = name), (name = null);
-  if (type(category) === 'string' && type(name) !== 'string')
-    (name = category), (category = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  properties = clone(properties) || {};
-  if (name) properties.name = name;
-  if (category) properties.category = category;
-
-  // Ensure properties has baseline spec properties.
-  // TODO: Eventually move these entirely to `options.context.page`
-  var defs = pageDefaults();
-  defaults(properties, defs);
-
-  // Mirror user overrides to `options.context.page` (but exclude custom properties)
-  // (Any page defaults get applied in `this.normalize` for consistency.)
-  // Weird, yeah--moving special props to `context.page` will fix this in the long term.
-  var overrides = pick(keys(defs), properties);
-  if (!is.empty(overrides)) {
-    options = options || {};
-    options.context = options.context || {};
-    options.context.page = overrides;
-  }
-
-  var msg = this.normalize({
-    properties: properties,
-    category: category,
-    options: options,
-    name: name
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  if (this.options.integrations) {
-    defaults(msg.integrations, this.options.integrations);
-  }
-
-  this._invoke('page', new Page(msg));
-
-  this.emit('page', category, name, properties, options);
-  this._callback(fn);
-  return this;
+Analytics.prototype.page = function (category, name, properties, options, fn) {
+    // Argument reshuffling.
+    /* eslint-disable no-unused-expressions, no-sequences */
+    if (is.fn(options))
+        (fn = options), (options = null);
+    if (is.fn(properties))
+        (fn = properties), (options = properties = null);
+    if (is.fn(name))
+        (fn = name), (options = properties = name = null);
+    if (type(category) === 'object')
+        (options = name), (properties = category), (name = category = null);
+    if (type(name) === 'object')
+        (options = properties), (properties = name), (name = null);
+    if (type(category) === 'string' && type(name) !== 'string')
+        (name = category), (category = null);
+    /* eslint-enable no-unused-expressions, no-sequences */
+    properties = clone(properties) || {};
+    if (name)
+        properties.name = name;
+    if (category)
+        properties.category = category;
+    // Ensure properties has baseline spec properties.
+    // TODO: Eventually move these entirely to `options.context.page`
+    var defs = pageDefaults();
+    defaults(properties, defs);
+    // Mirror user overrides to `options.context.page` (but exclude custom properties)
+    // (Any page defaults get applied in `this.normalize` for consistency.)
+    // Weird, yeah--moving special props to `context.page` will fix this in the long term.
+    var overrides = pick(keys(defs), properties);
+    if (!is.empty(overrides)) {
+        options = options || {};
+        options.context = options.context || {};
+        options.context.page = overrides;
+    }
+    var msg = this.normalize({
+        properties: properties,
+        category: category,
+        options: options,
+        name: name
+    });
+    // Add the initialize integrations so the server-side ones can be disabled too
+    if (this.options.integrations) {
+        defaults(msg.integrations, this.options.integrations);
+    }
+    this._invoke('page', new Page(msg));
+    this.emit('page', category, name, properties, options);
+    this._callback(fn);
+    return this;
 };
-
 /**
  * FIXME: BACKWARDS COMPATIBILITY: convert an old `pageview` to a `page` call.
- *
- * @param {string} [url]
- * @return {Analytics}
  * @api private
  */
-
-Analytics.prototype.pageview = function(url) {
-  var properties = {};
-  if (url) properties.path = url;
-  this.page(properties);
-  return this;
+Analytics.prototype.pageview = function (url) {
+    var properties = {};
+    if (url)
+        properties.path = url;
+    this.page(properties);
+    return this;
 };
-
 /**
  * Merge two previously unassociated user identities.
  *
@@ -1560,109 +1468,85 @@ Analytics.prototype.pageview = function(url) {
  * @param {Function} fn (optional)
  * @return {Analytics}
  */
-
-Analytics.prototype.alias = function(to, from, options, fn) {
-  // Argument reshuffling.
-  /* eslint-disable no-unused-expressions, no-sequences */
-  if (is.fn(options)) (fn = options), (options = null);
-  if (is.fn(from)) (fn = from), (options = null), (from = null);
-  if (is.object(from)) (options = from), (from = null);
-  /* eslint-enable no-unused-expressions, no-sequences */
-
-  var msg = this.normalize({
-    options: options,
-    previousId: from,
-    userId: to
-  });
-
-  // Add the initialize integrations so the server-side ones can be disabled too
-  if (this.options.integrations) {
-    defaults(msg.integrations, this.options.integrations);
-  }
-
-  this._invoke('alias', new Alias(msg));
-
-  this.emit('alias', to, from, options);
-  this._callback(fn);
-  return this;
+Analytics.prototype.alias = function (to, from, options, fn) {
+    // Argument reshuffling.
+    /* eslint-disable no-unused-expressions, no-sequences */
+    if (is.fn(options))
+        (fn = options), (options = null);
+    if (is.fn(from))
+        (fn = from), (options = null), (from = null);
+    if (is.object(from))
+        (options = from), (from = null);
+    /* eslint-enable no-unused-expressions, no-sequences */
+    var msg = this.normalize({
+        options: options,
+        previousId: from,
+        userId: to
+    });
+    // Add the initialize integrations so the server-side ones can be disabled too
+    if (this.options.integrations) {
+        defaults(msg.integrations, this.options.integrations);
+    }
+    this._invoke('alias', new Alias(msg));
+    this.emit('alias', to, from, options);
+    this._callback(fn);
+    return this;
 };
-
 /**
  * Register a `fn` to be fired when all the analytics services are ready.
- *
- * @param {Function} fn
- * @return {Analytics}
  */
-
-Analytics.prototype.ready = function(fn) {
-  if (is.fn(fn)) {
-    if (this._readied) {
-      nextTick(fn);
-    } else {
-      this.once('ready', fn);
+Analytics.prototype.ready = function (fn) {
+    if (is.fn(fn)) {
+        if (this._readied) {
+            nextTick(fn);
+        }
+        else {
+            this.once('ready', fn);
+        }
     }
-  }
-  return this;
+    return this;
 };
-
 /**
  * Set the `timeout` (in milliseconds) used for callbacks.
- *
- * @param {Number} timeout
  */
-
-Analytics.prototype.timeout = function(timeout) {
-  this._timeout = timeout;
+Analytics.prototype.timeout = function (timeout) {
+    this._timeout = timeout;
 };
-
 /**
  * Enable or disable debug.
- *
- * @param {string|boolean} str
  */
-
-Analytics.prototype.debug = function(str) {
-  if (!arguments.length || str) {
-    debug.enable('analytics:' + (str || '*'));
-  } else {
-    debug.disable();
-  }
+Analytics.prototype.debug = function (str) {
+    if (!arguments.length || str) {
+        debug.enable('analytics:' + (str || '*'));
+    }
+    else {
+        debug.disable();
+    }
 };
-
 /**
  * Apply options.
- *
- * @param {Object} options
- * @return {Analytics}
  * @api private
  */
-
-Analytics.prototype._options = function(options) {
-  options = options || {};
-  this.options = options;
-  cookie.options(options.cookie);
-  metrics.options(options.metrics);
-  store.options(options.localStorage);
-  user.options(options.user);
-  group.options(options.group);
-  return this;
+Analytics.prototype._options = function (options) {
+    options = options || {};
+    this.options = options;
+    cookie.options(options.cookie);
+    metrics.options(options.metrics);
+    store.options(options.localStorage);
+    user.options(options.user);
+    group.options(options.group);
+    return this;
 };
-
 /**
  * Callback a `fn` after our defined timeout period.
- *
- * @param {Function} fn
- * @return {Analytics}
  * @api private
  */
-
-Analytics.prototype._callback = function(fn) {
-  if (is.fn(fn)) {
-    this._timeout ? setTimeout(fn, this._timeout) : nextTick(fn);
-  }
-  return this;
+Analytics.prototype._callback = function (fn) {
+    if (is.fn(fn)) {
+        this._timeout ? setTimeout(fn, this._timeout) : nextTick(fn);
+    }
+    return this;
 };
-
 /**
  * Call `method` with `facade` on all enabled integrations.
  *
@@ -1671,249 +1555,207 @@ Analytics.prototype._callback = function(fn) {
  * @return {Analytics}
  * @api private
  */
-
-Analytics.prototype._invoke = function(method, facade) {
-  var self = this;
-
-  try {
-    this._sourceMiddlewares.applyMiddlewares(
-      extend(true, new Facade({}), facade),
-      this._integrations,
-      function(result) {
-        // A nullified payload should not be sent.
-        if (result === null) {
-          self.log(
-            'Payload with method "%s" was null and dropped by source a middleware.',
-            method
-          );
-          return;
-        }
-
-        // Check if the payload is still a Facade. If not, convert it to one.
-        if (!(result instanceof Facade)) {
-          result = new Facade(result);
-        }
-
-        self.emit('invoke', result);
-        metrics.increment('analytics_js.invoke', {
-          method: method
-        });
-
-        applyIntegrationMiddlewares(result);
-      }
-    );
-  } catch (e) {
-    metrics.increment('analytics_js.invoke.error', {
-      method: method
-    });
-    self.log(
-      'Error invoking .%s method of %s integration: %o',
-      method,
-      name,
-      e
-    );
-  }
-
-  return this;
-
-  function applyIntegrationMiddlewares(facade) {
-    var failedInitializations = self.failedInitializations || [];
-    each(function(integration, name) {
-      var facadeCopy = extend(true, new Facade({}), facade);
-
-      if (!facadeCopy.enabled(name)) return;
-      // Check if an integration failed to initialize.
-      // If so, do not process the message as the integration is in an unstable state.
-      if (failedInitializations.indexOf(name) >= 0) {
-        self.log(
-          'Skipping invocation of .%s method of %s integration. Integration failed to initialize properly.',
-          method,
-          name
-        );
-      } else {
-        try {
-          // Apply any integration middlewares that exist, then invoke the integration with the result.
-          self._integrationMiddlewares.applyMiddlewares(
-            facadeCopy,
-            integration.name,
-            function(result) {
-              // A nullified payload should not be sent to an integration.
-              if (result === null) {
-                self.log(
-                  'Payload to integration "%s" was null and dropped by a middleware.',
-                  name
-                );
+Analytics.prototype._invoke = function (method, facade) {
+    var self = this;
+    try {
+        this._sourceMiddlewares.applyMiddlewares(extend(true, new Facade({}), facade), this._integrations, function (result) {
+            // A nullified payload should not be sent.
+            if (result === null) {
+                self.log('Payload with method "%s" was null and dropped by source a middleware.', method);
                 return;
-              }
-
-              // Check if the payload is still a Facade. If not, convert it to one.
-              if (!(result instanceof Facade)) {
-                result = new Facade(result);
-              }
-
-              metrics.increment('analytics_js.integration.invoke', {
-                method: method,
-                integration_name: integration.name
-              });
-
-              integration.invoke.call(integration, method, result);
             }
-          );
-        } catch (e) {
-          metrics.increment('analytics_js.integration.invoke.error', {
-            method: method,
-            integration_name: integration.name
-          });
-          self.log(
-            'Error invoking .%s method of %s integration: %o',
-            method,
-            name,
-            e
-          );
-        }
-      }
-    }, self._integrations);
-  }
+            // Check if the payload is still a Facade. If not, convert it to one.
+            if (!(result instanceof Facade)) {
+                result = new Facade(result);
+            }
+            self.emit('invoke', result);
+            metrics.increment('analytics_js.invoke', {
+                method: method
+            });
+            applyIntegrationMiddlewares(result);
+        });
+    }
+    catch (e) {
+        metrics.increment('analytics_js.invoke.error', {
+            method: method
+        });
+        self.log('Error invoking .%s method of %s integration: %o', method, name, e);
+    }
+    return this;
+    function applyIntegrationMiddlewares(facade) {
+        var failedInitializations = self.failedInitializations || [];
+        each(function (integration, name) {
+            var facadeCopy = extend(true, new Facade({}), facade);
+            if (!facadeCopy.enabled(name))
+                return;
+            // Check if an integration failed to initialize.
+            // If so, do not process the message as the integration is in an unstable state.
+            if (failedInitializations.indexOf(name) >= 0) {
+                self.log('Skipping invocation of .%s method of %s integration. Integration failed to initialize properly.', method, name);
+            }
+            else {
+                try {
+                    // Apply any integration middlewares that exist, then invoke the integration with the result.
+                    self._integrationMiddlewares.applyMiddlewares(facadeCopy, integration.name, function (result) {
+                        // A nullified payload should not be sent to an integration.
+                        if (result === null) {
+                            self.log('Payload to integration "%s" was null and dropped by a middleware.', name);
+                            return;
+                        }
+                        // Check if the payload is still a Facade. If not, convert it to one.
+                        if (!(result instanceof Facade)) {
+                            result = new Facade(result);
+                        }
+                        // apply destination middlewares
+                        // Apply any integration middlewares that exist, then invoke the integration with the result.
+                        if (self._destinationMiddlewares[integration.name]) {
+                            self._destinationMiddlewares[integration.name].applyMiddlewares(facadeCopy, integration.name, function (result) {
+                                // A nullified payload should not be sent to an integration.
+                                if (result === null) {
+                                    self.log('Payload to destination "%s" was null and dropped by a middleware.', name);
+                                    return;
+                                }
+                                // Check if the payload is still a Facade. If not, convert it to one.
+                                if (!(result instanceof Facade)) {
+                                    result = new Facade(result);
+                                }
+                                metrics.increment('analytics_js.integration.invoke', {
+                                    method: method,
+                                    integration_name: integration.name
+                                });
+                                integration.invoke.call(integration, method, result);
+                            });
+                        }
+                        else {
+                            metrics.increment('analytics_js.integration.invoke', {
+                                method: method,
+                                integration_name: integration.name
+                            });
+                            integration.invoke.call(integration, method, result);
+                        }
+                    });
+                }
+                catch (e) {
+                    metrics.increment('analytics_js.integration.invoke.error', {
+                        method: method,
+                        integration_name: integration.name
+                    });
+                    self.log('Error invoking .%s method of %s integration: %o', method, name, e);
+                }
+            }
+        }, self._integrations);
+    }
 };
-
 /**
  * Push `args`.
  *
  * @param {Array} args
  * @api private
  */
-
-Analytics.prototype.push = function(args) {
-  var method = args.shift();
-  if (!this[method]) return;
-  this[method].apply(this, args);
+Analytics.prototype.push = function (args) {
+    var method = args.shift();
+    if (!this[method])
+        return;
+    this[method].apply(this, args);
 };
-
 /**
  * Reset group and user traits and id's.
  *
  * @api public
  */
-
-Analytics.prototype.reset = function() {
-  this.user().logout();
-  this.group().logout();
+Analytics.prototype.reset = function () {
+    this.user().logout();
+    this.group().logout();
 };
-
 /**
  * Parse the query string for callable methods.
  *
- * @param {String} query
- * @return {Analytics}
  * @api private
  */
-
-Analytics.prototype._parseQuery = function(query) {
-  // Parse querystring to an object
-  var q = querystring.parse(query);
-  // Create traits and properties objects, populate from querysting params
-  var traits = pickPrefix('ajs_trait_', q);
-  var props = pickPrefix('ajs_prop_', q);
-  // Trigger based on callable parameters in the URL
-  if (q.ajs_uid) this.identify(q.ajs_uid, traits);
-  if (q.ajs_event) this.track(q.ajs_event, props);
-  if (q.ajs_aid) user.anonymousId(q.ajs_aid);
-  return this;
-
-  /**
-   * Create a shallow copy of an input object containing only the properties
-   * whose keys are specified by a prefix, stripped of that prefix
-   *
-   * @param {String} prefix
-   * @param {Object} object
-   * @return {Object}
-   * @api private
-   */
-
-  function pickPrefix(prefix, object) {
-    var length = prefix.length;
-    var sub;
-    return foldl(
-      function(acc, val, key) {
-        if (key.substr(0, length) === prefix) {
-          sub = key.substr(length);
-          acc[sub] = val;
-        }
-        return acc;
-      },
-      {},
-      object
-    );
-  }
+Analytics.prototype._parseQuery = function (query) {
+    // Parse querystring to an object
+    var q = querystring.parse(query);
+    // Create traits and properties objects, populate from querysting params
+    var traits = pickPrefix('ajs_trait_', q);
+    var props = pickPrefix('ajs_prop_', q);
+    // Trigger based on callable parameters in the URL
+    if (q.ajs_uid)
+        this.identify(q.ajs_uid, traits);
+    if (q.ajs_event)
+        this.track(q.ajs_event, props);
+    if (q.ajs_aid)
+        user.anonymousId(q.ajs_aid);
+    return this;
+    /**
+     * Create a shallow copy of an input object containing only the properties
+     * whose keys are specified by a prefix, stripped of that prefix
+     *
+     * @return {Object}
+     * @api private
+     */
+    function pickPrefix(prefix, object) {
+        var length = prefix.length;
+        var sub;
+        return foldl(function (acc, val, key) {
+            if (key.substr(0, length) === prefix) {
+                sub = key.substr(length);
+                acc[sub] = val;
+            }
+            return acc;
+        }, {}, object);
+    }
 };
-
 /**
  * Normalize the given `msg`.
- *
- * @param {Object} msg
- * @return {Object}
  */
-
-Analytics.prototype.normalize = function(msg) {
-  msg = normalize(msg, keys(this._integrations));
-  if (msg.anonymousId) user.anonymousId(msg.anonymousId);
-  msg.anonymousId = user.anonymousId();
-
-  // Ensure all outgoing requests include page data in their contexts.
-  msg.context.page = defaults(msg.context.page || {}, pageDefaults());
-
-  return msg;
+Analytics.prototype.normalize = function (msg) {
+    msg = normalize(msg, keys(this._integrations));
+    if (msg.anonymousId)
+        user.anonymousId(msg.anonymousId);
+    msg.anonymousId = user.anonymousId();
+    // Ensure all outgoing requests include page data in their contexts.
+    msg.context.page = defaults(msg.context.page || {}, pageDefaults());
+    return msg;
 };
-
 /**
  * Merges the tracking plan and initialization integration options.
  *
  * @param  {Object} planIntegrations Tracking plan integrations.
  * @return {Object}                  The merged integrations.
  */
-Analytics.prototype._mergeInitializeAndPlanIntegrations = function(
-  planIntegrations
-) {
-  // Do nothing if there are no initialization integrations
-  if (!this.options.integrations) {
-    return planIntegrations;
-  }
-
-  // Clone the initialization integrations
-  var integrations = extend({}, this.options.integrations);
-  var integrationName;
-
-  // Allow the tracking plan to disable integrations that were explicitly
-  // enabled on initialization
-  if (planIntegrations.All === false) {
-    integrations = { All: false };
-  }
-
-  for (integrationName in planIntegrations) {
-    if (planIntegrations.hasOwnProperty(integrationName)) {
-      // Don't allow the tracking plan to re-enable disabled integrations
-      if (this.options.integrations[integrationName] !== false) {
-        integrations[integrationName] = planIntegrations[integrationName];
-      }
+Analytics.prototype._mergeInitializeAndPlanIntegrations = function (planIntegrations) {
+    // Do nothing if there are no initialization integrations
+    if (!this.options.integrations) {
+        return planIntegrations;
     }
-  }
-
-  return integrations;
+    // Clone the initialization integrations
+    var integrations = extend({}, this.options.integrations);
+    var integrationName;
+    // Allow the tracking plan to disable integrations that were explicitly
+    // enabled on initialization
+    if (planIntegrations.All === false) {
+        integrations = { All: false };
+    }
+    for (integrationName in planIntegrations) {
+        if (planIntegrations.hasOwnProperty(integrationName)) {
+            // Don't allow the tracking plan to re-enable disabled integrations
+            if (this.options.integrations[integrationName] !== false) {
+                integrations[integrationName] = planIntegrations[integrationName];
+            }
+        }
+    }
+    return integrations;
 };
-
 /**
  * No conflict support.
  */
-
-Analytics.prototype.noConflict = function() {
-  window.analytics = _analytics;
-  return this;
+Analytics.prototype.noConflict = function () {
+    window.analytics = _analytics;
+    return this;
 };
-
 /*
  * Exports.
  */
-
 module.exports = Analytics;
 module.exports.cookie = cookie;
 module.exports.memory = memory;
@@ -1921,142 +1763,110 @@ module.exports.store = store;
 module.exports.metrics = metrics;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./cookie":14,"./group":16,"./memory":18,"./metrics":19,"./middleware":20,"./normalize":21,"./pageDefaults":22,"./store":23,"./user":24,"@ndhoule/clone":1,"@ndhoule/defaults":2,"@ndhoule/each":4,"@ndhoule/foldl":7,"@ndhoule/keys":9,"@ndhoule/pick":11,"@segment/is-meta":33,"@segment/prevent-default":37,"bind-all":42,"component-emitter":50,"component-event":51,"component-querystring":53,"component-type":55,"debug":25,"extend":60,"is":64,"next-tick":73,"segmentio-facade":83}],14:[function(require,module,exports){
+},{"./cookie":14,"./group":16,"./memory":18,"./metrics":19,"./middleware":20,"./normalize":21,"./pageDefaults":22,"./store":23,"./user":24,"./utils/clone":25,"./utils/each":26,"@ndhoule/defaults":2,"@ndhoule/foldl":7,"@ndhoule/keys":9,"@ndhoule/pick":11,"@segment/is-meta":37,"@segment/prevent-default":41,"bind-all":46,"component-emitter":54,"component-event":55,"component-querystring":57,"component-type":59,"debug":28,"extend":64,"is":68,"next-tick":77,"segmentio-facade":87}],14:[function(require,module,exports){
 'use strict';
-
+Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Module dependencies.
  */
-
 var bindAll = require('bind-all');
-var clone = require('@ndhoule/clone');
-var cookie = require('component-cookie');
+var clone = require('./utils/clone');
+var cookie = require('@segment/cookie');
 var debug = require('debug')('analytics.js:cookie');
 var defaults = require('@ndhoule/defaults');
-var json = require('json3');
 var topDomain = require('@segment/top-domain');
-
 /**
  * Initialize a new `Cookie` with `options`.
  *
  * @param {Object} options
  */
-
 function Cookie(options) {
-  this.options(options);
+    this.options(options);
 }
-
 /**
  * Get or set the cookie options.
- *
- * @param {Object} options
- *   @field {Number} maxage (1 year)
- *   @field {String} domain
- *   @field {String} path
- *   @field {Boolean} secure
  */
-
-Cookie.prototype.options = function(options) {
-  if (arguments.length === 0) return this._options;
-
-  options = options || {};
-
-  var domain = '.' + topDomain(window.location.href);
-  if (domain === '.') domain = null;
-
-  this._options = defaults(options, {
-    // default to a year
-    maxage: 31536000000,
-    path: '/',
-    domain: domain
-  });
-
-  // http://curl.haxx.se/rfc/cookie_spec.html
-  // https://publicsuffix.org/list/effective_tld_names.dat
-  //
-  // try setting a dummy cookie with the options
-  // if the cookie isn't set, it probably means
-  // that the domain is on the public suffix list
-  // like myapp.herokuapp.com or localhost / ip.
-  this.set('ajs:test', true);
-  if (!this.get('ajs:test')) {
-    debug('fallback to domain=null');
-    this._options.domain = null;
-  }
-  this.remove('ajs:test');
+Cookie.prototype.options = function (options) {
+    if (arguments.length === 0)
+        return this._options;
+    options = options || {};
+    var domain = '.' + topDomain(window.location.href);
+    if (domain === '.')
+        domain = null;
+    this._options = defaults(options, {
+        // default to a year
+        maxage: 31536000000,
+        path: '/',
+        domain: domain,
+        sameSite: 'Lax'
+    });
+    // http://curl.haxx.se/rfc/cookie_spec.html
+    // https://publicsuffix.org/list/effective_tld_names.dat
+    //
+    // try setting a dummy cookie with the options
+    // if the cookie isn't set, it probably means
+    // that the domain is on the public suffix list
+    // like myapp.herokuapp.com or localhost / ip.
+    this.set('ajs:test', true);
+    if (!this.get('ajs:test')) {
+        debug('fallback to domain=null');
+        this._options.domain = null;
+    }
+    this.remove('ajs:test');
 };
-
 /**
  * Set a `key` and `value` in our cookie.
- *
- * @param {String} key
- * @param {Object} value
- * @return {Boolean} saved
  */
-
-Cookie.prototype.set = function(key, value) {
-  try {
-    value = json.stringify(value);
-    cookie(key, value, clone(this._options));
-    return true;
-  } catch (e) {
-    return false;
-  }
+Cookie.prototype.set = function (key, value) {
+    try {
+        value = window.JSON.stringify(value);
+        cookie(key, value === 'null' ? null : value, clone(this._options));
+        return true;
+    }
+    catch (e) {
+        return false;
+    }
 };
-
 /**
  * Get a value from our cookie by `key`.
- *
- * @param {String} key
- * @return {Object} value
  */
-
-Cookie.prototype.get = function(key) {
-  try {
-    var value = cookie(key);
-    value = value ? json.parse(value) : null;
-    return value;
-  } catch (e) {
-    return null;
-  }
+Cookie.prototype.get = function (key) {
+    try {
+        var value = cookie(key);
+        value = value ? window.JSON.parse(value) : null;
+        return value;
+    }
+    catch (e) {
+        return null;
+    }
 };
-
 /**
  * Remove a value from our cookie by `key`.
- *
- * @param {String} key
- * @return {Boolean} removed
  */
-
-Cookie.prototype.remove = function(key) {
-  try {
-    cookie(key, null, clone(this._options));
-    return true;
-  } catch (e) {
-    return false;
-  }
+Cookie.prototype.remove = function (key) {
+    try {
+        cookie(key, null, clone(this._options));
+        return true;
+    }
+    catch (e) {
+        return false;
+    }
 };
-
 /**
  * Expose the cookie singleton.
  */
-
 module.exports = bindAll(new Cookie());
-
 /**
  * Expose the `Cookie` constructor.
  */
-
 module.exports.Cookie = Cookie;
 
-},{"@ndhoule/clone":1,"@ndhoule/defaults":2,"@segment/top-domain":40,"bind-all":42,"component-cookie":44,"debug":25,"json3":65}],15:[function(require,module,exports){
+},{"./utils/clone":25,"@ndhoule/defaults":2,"@segment/cookie":35,"@segment/top-domain":44,"bind-all":46,"debug":28}],15:[function(require,module,exports){
 'use strict';
-
 /*
  * Module dependencies.
  */
-
-var clone = require('@ndhoule/clone');
+var clone = require('./utils/clone');
 var cookie = require('./cookie');
 var debug = require('debug')('analytics:entity');
 var defaults = require('@ndhoule/defaults');
@@ -2064,62 +1874,48 @@ var extend = require('@ndhoule/extend');
 var memory = require('./memory');
 var store = require('./store');
 var isodateTraverse = require('@segment/isodate-traverse');
-
 /**
  * Expose `Entity`
  */
-
 module.exports = Entity;
-
 /**
  * Initialize new `Entity` with `options`.
  *
  * @param {Object} options
  */
-
 function Entity(options) {
-  this.options(options);
-  this.initialize();
+    this.options(options);
+    this.initialize();
 }
-
 /**
  * Initialize picks the storage.
  *
  * Checks to see if cookies can be set
  * otherwise fallsback to localStorage.
  */
-
-Entity.prototype.initialize = function() {
-  cookie.set('ajs:cookies', true);
-
-  // cookies are enabled.
-  if (cookie.get('ajs:cookies')) {
-    cookie.remove('ajs:cookies');
-    this._storage = cookie;
-    return;
-  }
-
-  // localStorage is enabled.
-  if (store.enabled) {
-    this._storage = store;
-    return;
-  }
-
-  // fallback to memory storage.
-  debug(
-    'warning using memory store both cookies and localStorage are disabled'
-  );
-  this._storage = memory;
+Entity.prototype.initialize = function () {
+    cookie.set('ajs:cookies', true);
+    // cookies are enabled.
+    if (cookie.get('ajs:cookies')) {
+        cookie.remove('ajs:cookies');
+        this._storage = cookie;
+        return;
+    }
+    // localStorage is enabled.
+    if (store.enabled) {
+        this._storage = store;
+        return;
+    }
+    // fallback to memory storage.
+    debug('warning using memory store both cookies and localStorage are disabled');
+    this._storage = memory;
 };
-
 /**
  * Get the storage.
  */
-
-Entity.prototype.storage = function() {
-  return this._storage;
+Entity.prototype.storage = function () {
+    return this._storage;
 };
-
 /**
  * Get or set storage `options`.
  *
@@ -2128,117 +1924,100 @@ Entity.prototype.storage = function() {
  *   @property {Object} localStorage
  *   @property {Boolean} persist (default: `true`)
  */
-
-Entity.prototype.options = function(options) {
-  if (arguments.length === 0) return this._options;
-  this._options = defaults(options || {}, this.defaults || {});
+Entity.prototype.options = function (options) {
+    if (arguments.length === 0)
+        return this._options;
+    this._options = defaults(options || {}, this.defaults || {});
 };
-
 /**
  * Get or set the entity's `id`.
  *
  * @param {String} id
  */
-
-Entity.prototype.id = function(id) {
-  switch (arguments.length) {
-    case 0:
-      return this._getId();
-    case 1:
-      return this._setId(id);
-    default:
-    // No default case
-  }
+Entity.prototype.id = function (id) {
+    switch (arguments.length) {
+        case 0:
+            return this._getId();
+        case 1:
+            return this._setId(id);
+        default:
+        // No default case
+    }
 };
-
 /**
  * Get the entity's id.
  *
  * @return {String}
  */
-
-Entity.prototype._getId = function() {
-  if (!this._options.persist) {
-    return this._id === undefined ? null : this._id;
-  }
-
-  // Check cookies.
-  var cookieId = this._getIdFromCookie();
-  if (cookieId) {
-    return cookieId;
-  }
-
-  // Check localStorage.
-  var lsId = this._getIdFromLocalStorage();
-  if (lsId) {
-    // Copy the id to cookies so we can read it directly from cookies next time.
-    this._setIdInCookies(lsId);
-    return lsId;
-  }
-
-  return null;
+Entity.prototype._getId = function () {
+    if (!this._options.persist) {
+        return this._id === undefined ? null : this._id;
+    }
+    // Check cookies.
+    var cookieId = this._getIdFromCookie();
+    if (cookieId) {
+        return cookieId;
+    }
+    // Check localStorage.
+    var lsId = this._getIdFromLocalStorage();
+    if (lsId) {
+        // Copy the id to cookies so we can read it directly from cookies next time.
+        this._setIdInCookies(lsId);
+        return lsId;
+    }
+    return null;
 };
-
 /**
  * Get the entity's id from cookies.
  *
  * @return {String}
  */
-
-Entity.prototype._getIdFromCookie = function() {
-  return this.storage().get(this._options.cookie.key);
+Entity.prototype._getIdFromCookie = function () {
+    return this.storage().get(this._options.cookie.key);
 };
-
 /**
  * Get the entity's id from cookies.
  *
  * @return {String}
  */
-
-Entity.prototype._getIdFromLocalStorage = function() {
-  if (!this._options.localStorageFallbackDisabled) {
-    return store.get(this._options.cookie.key);
-  }
-  return null;
+Entity.prototype._getIdFromLocalStorage = function () {
+    if (!this._options.localStorageFallbackDisabled) {
+        return store.get(this._options.cookie.key);
+    }
+    return null;
 };
-
 /**
  * Set the entity's `id`.
  *
  * @param {String} id
  */
-
-Entity.prototype._setId = function(id) {
-  if (this._options.persist) {
-    this._setIdInCookies(id);
-    this._setIdInLocalStorage(id);
-  } else {
-    this._id = id;
-  }
+Entity.prototype._setId = function (id) {
+    if (this._options.persist) {
+        this._setIdInCookies(id);
+        this._setIdInLocalStorage(id);
+    }
+    else {
+        this._id = id;
+    }
 };
-
 /**
  * Set the entity's `id` in cookies.
  *
  * @param {String} id
  */
-
-Entity.prototype._setIdInCookies = function(id) {
-  this.storage().set(this._options.cookie.key, id);
+Entity.prototype._setIdInCookies = function (id) {
+    this.storage().set(this._options.cookie.key, id);
 };
-
 /**
  * Set the entity's `id` in local storage.
  *
  * @param {String} id
  */
-
-Entity.prototype._setIdInLocalStorage = function(id) {
-  if (!this._options.localStorageFallbackDisabled) {
-    store.set(this._options.cookie.key, id);
-  }
+Entity.prototype._setIdInLocalStorage = function (id) {
+    if (!this._options.localStorageFallbackDisabled) {
+        store.set(this._options.cookie.key, id);
+    }
 };
-
 /**
  * Get or set the entity's `traits`.
  *
@@ -2246,47 +2025,42 @@ Entity.prototype._setIdInLocalStorage = function(id) {
  *
  * @param {Object} traits
  */
-
-Entity.prototype.properties = Entity.prototype.traits = function(traits) {
-  switch (arguments.length) {
-    case 0:
-      return this._getTraits();
-    case 1:
-      return this._setTraits(traits);
-    default:
-    // No default case
-  }
+Entity.prototype.properties = Entity.prototype.traits = function (traits) {
+    switch (arguments.length) {
+        case 0:
+            return this._getTraits();
+        case 1:
+            return this._setTraits(traits);
+        default:
+        // No default case
+    }
 };
-
 /**
  * Get the entity's traits. Always convert ISO date strings into real dates,
  * since they aren't parsed back from local storage.
  *
  * @return {Object}
  */
-
-Entity.prototype._getTraits = function() {
-  var ret = this._options.persist
-    ? store.get(this._options.localStorage.key)
-    : this._traits;
-  return ret ? isodateTraverse(clone(ret)) : {};
+Entity.prototype._getTraits = function () {
+    var ret = this._options.persist
+        ? store.get(this._options.localStorage.key)
+        : this._traits;
+    return ret ? isodateTraverse(clone(ret)) : {};
 };
-
 /**
  * Set the entity's `traits`.
  *
  * @param {Object} traits
  */
-
-Entity.prototype._setTraits = function(traits) {
-  traits = traits || {};
-  if (this._options.persist) {
-    store.set(this._options.localStorage.key, traits);
-  } else {
-    this._traits = traits;
-  }
+Entity.prototype._setTraits = function (traits) {
+    traits = traits || {};
+    if (this._options.persist) {
+        store.set(this._options.localStorage.key, traits);
+    }
+    else {
+        this._traits = traits;
+    }
 };
-
 /**
  * Identify the entity with an `id` and `traits`. If we it's the same entity,
  * extend the existing `traits` instead of overwriting.
@@ -2294,174 +2068,139 @@ Entity.prototype._setTraits = function(traits) {
  * @param {String} id
  * @param {Object} traits
  */
-
-Entity.prototype.identify = function(id, traits) {
-  traits = traits || {};
-  var current = this.id();
-  if (current === null || current === id)
-    traits = extend(this.traits(), traits);
-  if (id) this.id(id);
-  this.debug('identify %o, %o', id, traits);
-  this.traits(traits);
-  this.save();
+Entity.prototype.identify = function (id, traits) {
+    traits = traits || {};
+    var current = this.id();
+    if (current === null || current === id)
+        traits = extend(this.traits(), traits);
+    if (id)
+        this.id(id);
+    this.debug('identify %o, %o', id, traits);
+    this.traits(traits);
+    this.save();
 };
-
 /**
  * Save the entity to local storage and the cookie.
  *
  * @return {Boolean}
  */
-
-Entity.prototype.save = function() {
-  if (!this._options.persist) return false;
-  this._setId(this.id());
-  this._setTraits(this.traits());
-  return true;
+Entity.prototype.save = function () {
+    if (!this._options.persist)
+        return false;
+    this._setId(this.id());
+    this._setTraits(this.traits());
+    return true;
 };
-
 /**
  * Log the entity out, reseting `id` and `traits` to defaults.
  */
-
-Entity.prototype.logout = function() {
-  this.id(null);
-  this.traits({});
-  this.storage().remove(this._options.cookie.key);
-  store.remove(this._options.cookie.key);
-  store.remove(this._options.localStorage.key);
+Entity.prototype.logout = function () {
+    this.id(null);
+    this.traits({});
+    this.storage().remove(this._options.cookie.key);
+    store.remove(this._options.cookie.key);
+    store.remove(this._options.localStorage.key);
 };
-
 /**
  * Reset all entity state, logging out and returning options to defaults.
  */
-
-Entity.prototype.reset = function() {
-  this.logout();
-  this.options({});
+Entity.prototype.reset = function () {
+    this.logout();
+    this.options({});
 };
-
 /**
  * Load saved entity `id` or `traits` from storage.
  */
-
-Entity.prototype.load = function() {
-  this.id(this.id());
-  this.traits(this.traits());
+Entity.prototype.load = function () {
+    this.id(this.id());
+    this.traits(this.traits());
 };
 
-},{"./cookie":14,"./memory":18,"./store":23,"@ndhoule/clone":1,"@ndhoule/defaults":2,"@ndhoule/extend":6,"@segment/isodate-traverse":34,"debug":25}],16:[function(require,module,exports){
+},{"./cookie":14,"./memory":18,"./store":23,"./utils/clone":25,"@ndhoule/defaults":2,"@ndhoule/extend":6,"@segment/isodate-traverse":38,"debug":28}],16:[function(require,module,exports){
 'use strict';
-
 /*
  * Module dependencies.
  */
-
 var Entity = require('./entity');
 var bindAll = require('bind-all');
 var debug = require('debug')('analytics:group');
 var inherit = require('inherits');
-
 /**
  * Group defaults
  */
-
 Group.defaults = {
-  persist: true,
-  cookie: {
-    key: 'ajs_group_id'
-  },
-  localStorage: {
-    key: 'ajs_group_properties'
-  }
+    persist: true,
+    cookie: {
+        key: 'ajs_group_id'
+    },
+    localStorage: {
+        key: 'ajs_group_properties'
+    }
 };
-
 /**
  * Initialize a new `Group` with `options`.
  *
  * @param {Object} options
  */
-
 function Group(options) {
-  this.defaults = Group.defaults;
-  this.debug = debug;
-  Entity.call(this, options);
+    this.defaults = Group.defaults;
+    this.debug = debug;
+    Entity.call(this, options);
 }
-
 /**
  * Inherit `Entity`
  */
-
 inherit(Group, Entity);
-
 /**
  * Expose the group singleton.
  */
-
 module.exports = bindAll(new Group());
-
 /**
  * Expose the `Group` constructor.
  */
-
 module.exports.Group = Group;
 
-},{"./entity":15,"bind-all":42,"debug":25,"inherits":62}],17:[function(require,module,exports){
+},{"./entity":15,"bind-all":46,"debug":28,"inherits":66}],17:[function(require,module,exports){
 'use strict';
-
 /**
  * Analytics.js
  *
  * (C) 2013-2016 Segment.io Inc.
  */
-
 var Analytics = require('./analytics');
-
 // Create a new `analytics` singleton.
 var analytics = new Analytics();
-
 // Expose `require`.
 // TODO(ndhoule): Look into deprecating, we no longer need to expose it in tests
 //analytics.require = require;
-
 // Expose package version.
 analytics.VERSION = require('../package.json').version;
-
 /*
  * Exports.
  */
-
 module.exports = analytics;
 
-},{"../package.json":26,"./analytics":13}],18:[function(require,module,exports){
+},{"../package.json":29,"./analytics":13}],18:[function(require,module,exports){
 'use strict';
-
 /*
  * Module Dependencies.
  */
-
 var bindAll = require('bind-all');
-var clone = require('@ndhoule/clone');
-
+var clone = require('./utils/clone');
 /**
  * HOP.
  */
-
 var has = Object.prototype.hasOwnProperty;
-
 /**
  * Expose `Memory`
  */
-
 module.exports = bindAll(new Memory());
-
 /**
  * Initialize `Memory` store
  */
-
 function Memory() {
-  this.store = {};
+    this.store = {};
 }
-
 /**
  * Set a `key` and `value`.
  *
@@ -2469,46 +2208,39 @@ function Memory() {
  * @param {Mixed} value
  * @return {Boolean}
  */
-
-Memory.prototype.set = function(key, value) {
-  this.store[key] = clone(value);
-  return true;
+Memory.prototype.set = function (key, value) {
+    this.store[key] = clone(value);
+    return true;
 };
-
 /**
  * Get a `key`.
  *
  * @param {String} key
  */
-
-Memory.prototype.get = function(key) {
-  if (!has.call(this.store, key)) return;
-  return clone(this.store[key]);
+Memory.prototype.get = function (key) {
+    if (!has.call(this.store, key))
+        return;
+    return clone(this.store[key]);
 };
-
 /**
  * Remove a `key`.
  *
  * @param {String} key
  * @return {Boolean}
  */
-
-Memory.prototype.remove = function(key) {
-  delete this.store[key];
-  return true;
+Memory.prototype.remove = function (key) {
+    delete this.store[key];
+    return true;
 };
 
-},{"@ndhoule/clone":1,"bind-all":42}],19:[function(require,module,exports){
+},{"./utils/clone":25,"bind-all":46}],19:[function(require,module,exports){
 'use strict';
-
 var bindAll = require('bind-all');
 var send = require('@segment/send-json');
 var debug = require('debug')('analytics.js:metrics');
-
 function Metrics(options) {
-  this.options(options);
+    this.options(options);
 }
-
 /**
  * Set the metrics options.
  *
@@ -2517,217 +2249,176 @@ function Metrics(options) {
  *   @field {Number} sampleRate
  *   @field {Number} flushTimer
  */
-
-Metrics.prototype.options = function(options) {
-  options = options || {};
-
-  this.host = options.host || 'api.segment.io/v1';
-  this.sampleRate = options.sampleRate || 0; // disable metrics by default.
-  this.flushTimer = options.flushTimer || 30 * 1000 /* 30s */;
-  this.maxQueueSize = options.maxQueueSize || 20;
-
-  this.queue = [];
-
-  if (this.sampleRate > 0) {
-    var self = this;
-    setInterval(function() {
-      self._flush();
-    }, this.flushTimer);
-  }
+Metrics.prototype.options = function (options) {
+    options = options || {};
+    this.host = options.host || 'api.segment.io/v1';
+    this.sampleRate = options.sampleRate || 0; // disable metrics by default.
+    this.flushTimer = options.flushTimer || 30 * 1000 /* 30s */;
+    this.maxQueueSize = options.maxQueueSize || 20;
+    this.queue = [];
+    if (this.sampleRate > 0) {
+        var self = this;
+        setInterval(function () {
+            self._flush();
+        }, this.flushTimer);
+    }
 };
-
 /**
  * Increments the counter identified by name and tags by one.
  *
  * @param {String} metric Name of the metric to increment.
  * @param {Object} tags Dimensions associated with the metric.
  */
-Metrics.prototype.increment = function(metric, tags) {
-  if (Math.random() > this.sampleRate) {
-    return;
-  }
-
-  if (this.queue.length >= this.maxQueueSize) {
-    return;
-  }
-
-  this.queue.push({ type: 'Counter', metric: metric, value: 1, tags: tags });
-
-  // Trigger a flush if this is an error metric.
-  if (metric.indexOf('error') > 0) {
-    this._flush();
-  }
+Metrics.prototype.increment = function (metric, tags) {
+    if (Math.random() > this.sampleRate) {
+        return;
+    }
+    if (this.queue.length >= this.maxQueueSize) {
+        return;
+    }
+    this.queue.push({ type: 'Counter', metric: metric, value: 1, tags: tags });
+    // Trigger a flush if this is an error metric.
+    if (metric.indexOf('error') > 0) {
+        this._flush();
+    }
 };
-
 /**
  * Flush all queued metrics.
  */
-Metrics.prototype._flush = function() {
-  var self = this;
-
-  if (self.queue.length <= 0) {
-    return;
-  }
-
-  var payload = { series: this.queue };
-  var headers = { 'Content-Type': 'text/plain' };
-
-  self.queue = [];
-
-  // This endpoint does not support jsonp, so only proceed if the browser
-  // supports xhr.
-  if (send.type !== 'xhr') return;
-
-  send('https://' + this.host + '/m', payload, headers, function(err, res) {
-    debug('sent %O, received %O', payload, [err, res]);
-  });
+Metrics.prototype._flush = function () {
+    var self = this;
+    if (self.queue.length <= 0) {
+        return;
+    }
+    var payload = { series: this.queue };
+    var headers = { 'Content-Type': 'text/plain' };
+    self.queue = [];
+    // This endpoint does not support jsonp, so only proceed if the browser
+    // supports xhr.
+    if (send.type !== 'xhr')
+        return;
+    send('https://' + this.host + '/m', payload, headers, function (err, res) {
+        debug('sent %O, received %O', payload, [err, res]);
+    });
 };
-
 /**
  * Expose the metrics singleton.
  */
-
 module.exports = bindAll(new Metrics());
-
 /**
  * Expose the `Metrics` constructor.
  */
-
 module.exports.Metrics = Metrics;
 
-},{"@segment/send-json":38,"bind-all":42,"debug":25}],20:[function(require,module,exports){
+},{"@segment/send-json":42,"bind-all":46,"debug":28}],20:[function(require,module,exports){
 'use strict';
-
 var Facade = require('segmentio-facade');
-
 module.exports.SourceMiddlewareChain = function SourceMiddlewareChain() {
-  var apply = middlewareChain(this);
-
-  this.applyMiddlewares = function(facade, integrations, callback) {
-    return apply(
-      function(mw, payload, next) {
-        mw({
-          integrations: integrations,
-          next: next,
-          payload: payload
-        });
-      },
-      facade,
-      callback
-    );
-  };
+    var apply = middlewareChain(this);
+    this.applyMiddlewares = function (facade, integrations, callback) {
+        return apply(function (mw, payload, next) {
+            mw({
+                integrations: integrations,
+                next: next,
+                payload: payload
+            });
+        }, facade, callback);
+    };
 };
-
 module.exports.IntegrationMiddlewareChain = function IntegrationMiddlewareChain() {
-  var apply = middlewareChain(this);
-
-  this.applyMiddlewares = function(facade, integration, callback) {
-    return apply(
-      function(mw, payload, next) {
-        mw(payload, integration, next);
-      },
-      facade,
-      callback
-    );
-  };
+    var apply = middlewareChain(this);
+    this.applyMiddlewares = function (facade, integration, callback) {
+        return apply(function (mw, payload, next) {
+            mw(payload, integration, next);
+        }, facade, callback);
+    };
 };
-
+module.exports.DestinationMiddlewareChain = function DestinationMiddlewareChain() {
+    var apply = middlewareChain(this);
+    this.applyMiddlewares = function (facade, integration, callback) {
+        return apply(function (mw, payload, next) {
+            mw({ payload: payload, integration: integration, next: next });
+        }, facade, callback);
+    };
+};
 // Chain is essentially a linked list of middlewares to run in order.
 function middlewareChain(dest) {
-  var middlewares = [];
-
-  // Return a copy to prevent external mutations.
-  dest.getMiddlewares = function() {
-    return middlewares.slice();
-  };
-
-  dest.add = function(middleware) {
-    if (typeof middleware !== 'function')
-      throw new Error('attempted to add non-function middleware');
-
-    // Check for identical object references - bug check.
-    if (middlewares.indexOf(middleware) !== -1)
-      throw new Error('middleware is already registered');
-    middlewares.push(middleware);
-  };
-
-  // fn is the callback to be run once all middlewares have been applied.
-  return function applyMiddlewares(run, facade, callback) {
-    if (typeof facade !== 'object')
-      throw new Error('applyMiddlewares requires a payload object');
-    if (typeof callback !== 'function')
-      throw new Error('applyMiddlewares requires a function callback');
-
-    // Attach callback to the end of the chain.
-    var middlewaresToApply = middlewares.slice();
-    middlewaresToApply.push(callback);
-    executeChain(run, facade, middlewaresToApply, 0);
-  };
+    var middlewares = [];
+    // Return a copy to prevent external mutations.
+    dest.getMiddlewares = function () {
+        return middlewares.slice();
+    };
+    dest.add = function (middleware) {
+        if (typeof middleware !== 'function')
+            throw new Error('attempted to add non-function middleware');
+        // Check for identical object references - bug check.
+        if (middlewares.indexOf(middleware) !== -1)
+            throw new Error('middleware is already registered');
+        middlewares.push(middleware);
+    };
+    // fn is the callback to be run once all middlewares have been applied.
+    return function applyMiddlewares(run, facade, callback) {
+        if (typeof facade !== 'object')
+            throw new Error('applyMiddlewares requires a payload object');
+        if (typeof callback !== 'function')
+            throw new Error('applyMiddlewares requires a function callback');
+        // Attach callback to the end of the chain.
+        var middlewaresToApply = middlewares.slice();
+        middlewaresToApply.push(callback);
+        executeChain(run, facade, middlewaresToApply, 0);
+    };
 }
-
 // Go over all middlewares until all have been applied.
 function executeChain(run, payload, middlewares, index) {
-  // If the facade has been nullified, immediately skip to the final middleware.
-  if (payload === null) {
-    middlewares[middlewares.length - 1](null);
-    return;
-  }
-
-  // Check if the payload is still a Facade. If not, convert it to one.
-  if (!(payload instanceof Facade)) {
-    payload = new Facade(payload);
-  }
-
-  var mw = middlewares[index];
-  if (mw) {
-    // If there's another middleware, continue down the chain. Otherwise, call the final function.
-    if (middlewares[index + 1]) {
-      run(mw, payload, function(result) {
-        executeChain(run, result, middlewares, ++index);
-      });
-    } else {
-      mw(payload);
+    // If the facade has been nullified, immediately skip to the final middleware.
+    if (payload === null) {
+        middlewares[middlewares.length - 1](null);
+        return;
     }
-  }
+    // Check if the payload is still a Facade. If not, convert it to one.
+    if (!(payload instanceof Facade)) {
+        payload = new Facade(payload);
+    }
+    var mw = middlewares[index];
+    if (mw) {
+        // If there's another middleware, continue down the chain. Otherwise, call the final function.
+        if (middlewares[index + 1]) {
+            run(mw, payload, function (result) {
+                executeChain(run, result, middlewares, ++index);
+            });
+        }
+        else {
+            mw(payload);
+        }
+    }
 }
-
 module.exports.middlewareChain = middlewareChain;
 
-},{"segmentio-facade":83}],21:[function(require,module,exports){
+},{"segmentio-facade":87}],21:[function(require,module,exports){
 'use strict';
-
 /**
  * Module Dependencies.
  */
-
 var debug = require('debug')('analytics.js:normalize');
 var defaults = require('@ndhoule/defaults');
-var each = require('@ndhoule/each');
+var each = require('./utils/each');
 var includes = require('@ndhoule/includes');
-var map = require('@ndhoule/map');
+var map = require('./utils/map');
 var type = require('component-type');
-var uuid = require('uuid').v4;
-var json = require('json3');
+var uuid = require('uuid/v4');
 var md5 = require('spark-md5').hash;
-
 /**
  * HOP.
  */
-
 var has = Object.prototype.hasOwnProperty;
-
 /**
  * Expose `normalize`
  */
-
 module.exports = normalize;
-
 /**
  * Toplevel properties.
  */
-
 var toplevel = ['integrations', 'anonymousId', 'timestamp', 'context'];
-
 /**
  * Normalize `msg` based on integrations `list`.
  *
@@ -2735,76 +2426,69 @@ var toplevel = ['integrations', 'anonymousId', 'timestamp', 'context'];
  * @param {Array} list
  * @return {Function}
  */
-
 function normalize(msg, list) {
-  var lower = map(function(s) {
-    return s.toLowerCase();
-  }, list);
-  var opts = msg.options || {};
-  var integrations = opts.integrations || {};
-  var providers = opts.providers || {};
-  var context = opts.context || {};
-  var ret = {};
-  debug('<-', msg);
-
-  // integrations.
-  each(function(value, key) {
-    if (!integration(key)) return;
-    if (!has.call(integrations, key)) integrations[key] = value;
-    delete opts[key];
-  }, opts);
-
-  // providers.
-  delete opts.providers;
-  each(function(value, key) {
-    if (!integration(key)) return;
-    if (type(integrations[key]) === 'object') return;
-    if (has.call(integrations, key) && typeof providers[key] === 'boolean')
-      return;
-    integrations[key] = value;
-  }, providers);
-
-  // move all toplevel options to msg
-  // and the rest to context.
-  each(function(value, key) {
-    if (includes(key, toplevel)) {
-      ret[key] = opts[key];
-    } else {
-      context[key] = opts[key];
+    var lower = map(function (s) {
+        return s.toLowerCase();
+    }, list);
+    var opts = msg.options || {};
+    var integrations = opts.integrations || {};
+    var providers = opts.providers || {};
+    var context = opts.context || {};
+    var ret = {};
+    debug('<-', msg);
+    // integrations.
+    each(function (value, key) {
+        if (!integration(key))
+            return;
+        if (!has.call(integrations, key))
+            integrations[key] = value;
+        delete opts[key];
+    }, opts);
+    // providers.
+    delete opts.providers;
+    each(function (value, key) {
+        if (!integration(key))
+            return;
+        if (type(integrations[key]) === 'object')
+            return;
+        if (has.call(integrations, key) && typeof providers[key] === 'boolean')
+            return;
+        integrations[key] = value;
+    }, providers);
+    // move all toplevel options to msg
+    // and the rest to context.
+    each(function (value, key) {
+        if (includes(key, toplevel)) {
+            ret[key] = opts[key];
+        }
+        else {
+            context[key] = opts[key];
+        }
+    }, opts);
+    // generate and attach a messageId to msg
+    msg.messageId = 'ajs-' + md5(window.JSON.stringify(msg) + uuid());
+    // cleanup
+    delete msg.options;
+    ret.integrations = integrations;
+    ret.context = context;
+    ret = defaults(ret, msg);
+    debug('->', ret);
+    return ret;
+    function integration(name) {
+        return !!(includes(name, list) ||
+            name.toLowerCase() === 'all' ||
+            includes(name.toLowerCase(), lower));
     }
-  }, opts);
-
-  // generate and attach a messageId to msg
-  msg.messageId = 'ajs-' + md5(json.stringify(msg) + uuid());
-
-  // cleanup
-  delete msg.options;
-  ret.integrations = integrations;
-  ret.context = context;
-  ret = defaults(ret, msg);
-  debug('->', ret);
-  return ret;
-
-  function integration(name) {
-    return !!(
-      includes(name, list) ||
-      name.toLowerCase() === 'all' ||
-      includes(name.toLowerCase(), lower)
-    );
-  }
 }
 
-},{"@ndhoule/defaults":2,"@ndhoule/each":4,"@ndhoule/includes":8,"@ndhoule/map":10,"component-type":55,"debug":25,"json3":65,"spark-md5":90,"uuid":100}],22:[function(require,module,exports){
+},{"./utils/each":26,"./utils/map":27,"@ndhoule/defaults":2,"@ndhoule/includes":8,"component-type":59,"debug":28,"spark-md5":94,"uuid/v4":107}],22:[function(require,module,exports){
 'use strict';
-
 /*
  * Module dependencies.
  */
-
 var canonical = require('@segment/canonical');
 var includes = require('@ndhoule/includes');
 var url = require('component-url');
-
 /**
  * Return a default `options.context.page` object.
  *
@@ -2812,30 +2496,27 @@ var url = require('component-url');
  *
  * @return {Object}
  */
-
 function pageDefaults() {
-  return {
-    path: canonicalPath(),
-    referrer: document.referrer,
-    search: location.search,
-    title: document.title,
-    url: canonicalUrl(location.search)
-  };
+    return {
+        path: canonicalPath(),
+        referrer: document.referrer,
+        search: location.search,
+        title: document.title,
+        url: canonicalUrl(location.search)
+    };
 }
-
 /**
  * Return the canonical path for the page.
  *
  * @return {string}
  */
-
 function canonicalPath() {
-  var canon = canonical();
-  if (!canon) return window.location.pathname;
-  var parsed = url.parse(canon);
-  return parsed.pathname;
+    var canon = canonical();
+    if (!canon)
+        return window.location.pathname;
+    var parsed = url.parse(canon);
+    return parsed.pathname;
 }
-
 /**
  * Return the canonical URL for the page concat the given `search`
  * and strip the hash.
@@ -2843,155 +2524,130 @@ function canonicalPath() {
  * @param {string} search
  * @return {string}
  */
-
 function canonicalUrl(search) {
-  var canon = canonical();
-  if (canon) return includes('?', canon) ? canon : canon + search;
-  var url = window.location.href;
-  var i = url.indexOf('#');
-  return i === -1 ? url : url.slice(0, i);
+    var canon = canonical();
+    if (canon)
+        return includes('?', canon) ? canon : canon + search;
+    var url = window.location.href;
+    var i = url.indexOf('#');
+    return i === -1 ? url : url.slice(0, i);
 }
-
 /*
  * Exports.
  */
-
 module.exports = pageDefaults;
 
-},{"@ndhoule/includes":8,"@segment/canonical":31,"component-url":56}],23:[function(require,module,exports){
+},{"@ndhoule/includes":8,"@segment/canonical":34,"component-url":60}],23:[function(require,module,exports){
 'use strict';
-
 /*
  * Module dependencies.
  */
-
 var bindAll = require('bind-all');
 var defaults = require('@ndhoule/defaults');
 var store = require('@segment/store');
-
 /**
  * Initialize a new `Store` with `options`.
  *
  * @param {Object} options
  */
-
 function Store(options) {
-  this.options(options);
+    this.options(options);
 }
-
 /**
  * Set the `options` for the store.
  *
  * @param {Object} options
  *   @field {Boolean} enabled (true)
  */
-
-Store.prototype.options = function(options) {
-  if (arguments.length === 0) return this._options;
-
-  options = options || {};
-  defaults(options, { enabled: true });
-
-  this.enabled = options.enabled && store.enabled;
-  this._options = options;
+Store.prototype.options = function (options) {
+    if (arguments.length === 0)
+        return this._options;
+    options = options || {};
+    defaults(options, { enabled: true });
+    this.enabled = options.enabled && store.enabled;
+    this._options = options;
 };
-
 /**
  * Set a `key` and `value` in local storage.
  *
  * @param {string} key
  * @param {Object} value
  */
-
-Store.prototype.set = function(key, value) {
-  if (!this.enabled) return false;
-  return store.set(key, value);
+Store.prototype.set = function (key, value) {
+    if (!this.enabled)
+        return false;
+    return store.set(key, value);
 };
-
 /**
  * Get a value from local storage by `key`.
  *
  * @param {string} key
  * @return {Object}
  */
-
-Store.prototype.get = function(key) {
-  if (!this.enabled) return null;
-  return store.get(key);
+Store.prototype.get = function (key) {
+    if (!this.enabled)
+        return null;
+    return store.get(key);
 };
-
 /**
  * Remove a value from local storage by `key`.
  *
  * @param {string} key
  */
-
-Store.prototype.remove = function(key) {
-  if (!this.enabled) return false;
-  return store.remove(key);
+Store.prototype.remove = function (key) {
+    if (!this.enabled)
+        return false;
+    return store.remove(key);
 };
-
 /**
  * Expose the store singleton.
  */
-
 module.exports = bindAll(new Store());
-
 /**
  * Expose the `Store` constructor.
  */
-
 module.exports.Store = Store;
 
-},{"@ndhoule/defaults":2,"@segment/store":39,"bind-all":42}],24:[function(require,module,exports){
+},{"@ndhoule/defaults":2,"@segment/store":43,"bind-all":46}],24:[function(require,module,exports){
 'use strict';
-
 /*
  * Module dependencies.
  */
-
 var Entity = require('./entity');
 var bindAll = require('bind-all');
 var cookie = require('./cookie');
 var debug = require('debug')('analytics:user');
 var inherit = require('inherits');
-var rawCookie = require('component-cookie');
+var rawCookie = require('@segment/cookie');
 var uuid = require('uuid');
 var localStorage = require('./store');
-
 /**
  * User defaults
  */
-
 User.defaults = {
-  persist: true,
-  cookie: {
-    key: 'ajs_user_id',
-    oldKey: 'ajs_user'
-  },
-  localStorage: {
-    key: 'ajs_user_traits'
-  }
+    persist: true,
+    cookie: {
+        key: 'ajs_user_id',
+        oldKey: 'ajs_user'
+    },
+    localStorage: {
+        key: 'ajs_user_traits'
+    }
 };
-
 /**
  * Initialize a new `User` with `options`.
  *
  * @param {Object} options
  */
-
 function User(options) {
-  this.defaults = User.defaults;
-  this.debug = debug;
-  Entity.call(this, options);
+    this.defaults = User.defaults;
+    this.debug = debug;
+    Entity.call(this, options);
 }
-
 /**
  * Inherit `Entity`
  */
-
 inherit(User, Entity);
-
 /**
  * Set/get the user id.
  *
@@ -3019,134 +2675,377 @@ inherit(User, Entity);
  * user.id('baz'); // no change
  * assert.notEqual(anonymousId, user.anonymousId());
  */
-
-User.prototype.id = function(id) {
-  var prev = this._getId();
-  var ret = Entity.prototype.id.apply(this, arguments);
-  if (prev == null) return ret;
-  // FIXME: We're relying on coercion here (1 == "1"), but our API treats these
-  // two values differently. Figure out what will break if we remove this and
-  // change to strict equality
-  /* eslint-disable eqeqeq */
-  if (prev != id && id) this.anonymousId(null);
-  /* eslint-enable eqeqeq */
-  return ret;
+User.prototype.id = function (id) {
+    var prev = this._getId();
+    var ret = Entity.prototype.id.apply(this, arguments);
+    if (prev == null)
+        return ret;
+    // FIXME: We're relying on coercion here (1 == "1"), but our API treats these
+    // two values differently. Figure out what will break if we remove this and
+    // change to strict equality
+    /* eslint-disable eqeqeq */
+    if (prev != id && id)
+        this.anonymousId(null);
+    /* eslint-enable eqeqeq */
+    return ret;
 };
-
 /**
  * Set / get / remove anonymousId.
  *
  * @param {String} anonymousId
  * @return {String|User}
  */
-
-User.prototype.anonymousId = function(anonymousId) {
-  var store = this.storage();
-
-  // set / remove
-  if (arguments.length) {
-    store.set('ajs_anonymous_id', anonymousId);
-    this._setAnonymousIdInLocalStorage(anonymousId);
-    return this;
-  }
-
-  // new
-  anonymousId = store.get('ajs_anonymous_id');
-  if (anonymousId) {
-    // value exists in cookie, copy it to localStorage
-    this._setAnonymousIdInLocalStorage(anonymousId);
-    // refresh cookie to extend expiry
-    store.set('ajs_anonymous_id', anonymousId);
-    return anonymousId;
-  }
-
-  if (!this._options.localStorageFallbackDisabled) {
-    // if anonymousId doesn't exist in cookies, check localStorage
-    anonymousId = localStorage.get('ajs_anonymous_id');
-    if (anonymousId) {
-      // Write to cookies if available in localStorage but not cookies
-      store.set('ajs_anonymous_id', anonymousId);
-      return anonymousId;
+User.prototype.anonymousId = function (anonymousId) {
+    var store = this.storage();
+    // set / remove
+    if (arguments.length) {
+        store.set('ajs_anonymous_id', anonymousId);
+        this._setAnonymousIdInLocalStorage(anonymousId);
+        return this;
     }
-  }
-
-  // old - it is not stringified so we use the raw cookie.
-  anonymousId = rawCookie('_sio');
-  if (anonymousId) {
-    anonymousId = anonymousId.split('----')[0];
+    // new
+    anonymousId = store.get('ajs_anonymous_id');
+    if (anonymousId) {
+        // value exists in cookie, copy it to localStorage
+        this._setAnonymousIdInLocalStorage(anonymousId);
+        // refresh cookie to extend expiry
+        store.set('ajs_anonymous_id', anonymousId);
+        return anonymousId;
+    }
+    if (!this._options.localStorageFallbackDisabled) {
+        // if anonymousId doesn't exist in cookies, check localStorage
+        anonymousId = localStorage.get('ajs_anonymous_id');
+        if (anonymousId) {
+            // Write to cookies if available in localStorage but not cookies
+            store.set('ajs_anonymous_id', anonymousId);
+            return anonymousId;
+        }
+    }
+    // old - it is not stringified so we use the raw cookie.
+    anonymousId = rawCookie('_sio');
+    if (anonymousId) {
+        anonymousId = anonymousId.split('----')[0];
+        store.set('ajs_anonymous_id', anonymousId);
+        this._setAnonymousIdInLocalStorage(anonymousId);
+        store.remove('_sio');
+        return anonymousId;
+    }
+    // empty
+    anonymousId = uuid.v4();
     store.set('ajs_anonymous_id', anonymousId);
     this._setAnonymousIdInLocalStorage(anonymousId);
-    store.remove('_sio');
-    return anonymousId;
-  }
-
-  // empty
-  anonymousId = uuid.v4();
-  store.set('ajs_anonymous_id', anonymousId);
-  this._setAnonymousIdInLocalStorage(anonymousId);
-  return store.get('ajs_anonymous_id');
+    return store.get('ajs_anonymous_id');
 };
-
 /**
  * Set the user's `anonymousid` in local storage.
  *
  * @param {String} id
  */
-
-User.prototype._setAnonymousIdInLocalStorage = function(id) {
-  if (!this._options.localStorageFallbackDisabled) {
-    localStorage.set('ajs_anonymous_id', id);
-  }
+User.prototype._setAnonymousIdInLocalStorage = function (id) {
+    if (!this._options.localStorageFallbackDisabled) {
+        localStorage.set('ajs_anonymous_id', id);
+    }
 };
-
 /**
  * Remove anonymous id on logout too.
  */
-
-User.prototype.logout = function() {
-  Entity.prototype.logout.call(this);
-  this.anonymousId(null);
+User.prototype.logout = function () {
+    Entity.prototype.logout.call(this);
+    this.anonymousId(null);
 };
-
 /**
  * Load saved user `id` or `traits` from storage.
  */
-
-User.prototype.load = function() {
-  if (this._loadOldCookie()) return;
-  Entity.prototype.load.call(this);
+User.prototype.load = function () {
+    if (this._loadOldCookie())
+        return;
+    Entity.prototype.load.call(this);
 };
-
 /**
  * BACKWARDS COMPATIBILITY: Load the old user from the cookie.
  *
  * @api private
  * @return {boolean}
  */
-
-User.prototype._loadOldCookie = function() {
-  var user = cookie.get(this._options.cookie.oldKey);
-  if (!user) return false;
-
-  this.id(user.id);
-  this.traits(user.traits);
-  cookie.remove(this._options.cookie.oldKey);
-  return true;
+User.prototype._loadOldCookie = function () {
+    var user = cookie.get(this._options.cookie.oldKey);
+    if (!user)
+        return false;
+    this.id(user.id);
+    this.traits(user.traits);
+    cookie.remove(this._options.cookie.oldKey);
+    return true;
 };
-
 /**
  * Expose the user singleton.
  */
-
 module.exports = bindAll(new User());
-
 /**
  * Expose the `User` constructor.
  */
-
 module.exports.User = User;
 
-},{"./cookie":14,"./entity":15,"./store":23,"bind-all":42,"component-cookie":44,"debug":25,"inherits":62,"uuid":100}],25:[function(require,module,exports){
+},{"./cookie":14,"./entity":15,"./store":23,"@segment/cookie":35,"bind-all":46,"debug":28,"inherits":66,"uuid":103}],25:[function(require,module,exports){
+'use strict';
+var type = require('component-type');
+/**
+ * Deeply clone an object.
+ *
+ * @param {*} obj Any object.
+ *
+ * COPYRIGHT: https://github.com/ndhoule/clone/blob/master/LICENSE.md
+ * The MIT License (MIT)
+ * Copyright (c) 2015 Nathan Houle
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+var clone = function clone(obj) {
+    var t = type(obj);
+    var copy;
+    if (t === 'object') {
+        copy = {};
+        for (var key in obj) {
+            if (obj.hasOwnProperty(key)) {
+                copy[key] = clone(obj[key]);
+            }
+        }
+        return copy;
+    }
+    if (t === 'array') {
+        copy = new Array(obj.length);
+        for (var i = 0, l = obj.length; i < l; i++) {
+            copy[i] = clone(obj[i]);
+        }
+        return copy;
+    }
+    if (t === 'regexp') {
+        // from millermedeiros/amd-utils - MIT
+        var flags = '';
+        flags += obj.multiline ? 'm' : '';
+        flags += obj.global ? 'g' : '';
+        flags += obj.ignoreCase ? 'i' : '';
+        return new RegExp(obj.source, flags);
+    }
+    if (t === 'date') {
+        return new Date(obj.getTime());
+    }
+    // string, number, boolean, etc.
+    return obj;
+};
+module.exports = clone;
+
+},{"component-type":59}],26:[function(require,module,exports){
+'use strict';
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2015 Nathan Houle
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*
+ * Module dependencies.
+ */
+var keys = require('@ndhoule/keys');
+var objToString = Object.prototype.toString;
+/**
+ * Tests if a value is a number.
+ *
+ * @name isNumber
+ * @api private
+ * @param {*} val The value to test.
+ * @return {boolean} Returns `true` if `val` is a number, otherwise `false`.
+ */
+var isNumber = function isNumber(val) {
+    var type = typeof val;
+    return (type === 'number' ||
+        (type === 'object' && objToString.call(val) === '[object Number]'));
+};
+/**
+ * Tests if a value is an array.
+ *
+ * @name isArray
+ * @api private
+ * @param {*} val The value to test.
+ * @return {boolean} Returns `true` if the value is an array, otherwise `false`.
+ */
+var isArray = typeof Array.isArray === 'function'
+    ? Array.isArray
+    : function isArray(val) {
+        return objToString.call(val) === '[object Array]';
+    };
+/**
+ * Tests if a value is array-like. Array-like means the value is not a function and has a numeric
+ * `.length` property.
+ *
+ * @name isArrayLike
+ * @api private
+ * @param {*} val
+ * @return {boolean}
+ */
+var isArrayLike = function isArrayLike(val) {
+    return (val != null &&
+        (isArray(val) || (val !== 'function' && isNumber(val.length))));
+};
+/**
+ * Internal implementation of `each`. Works on arrays and array-like data structures.
+ *
+ * @name arrayEach
+ * @api private
+ * @param {Function(value, key, collection)} iterator The function to invoke per iteration.
+ * @param {Array} array The array(-like) structure to iterate over.
+ * @return {undefined}
+ */
+var arrayEach = function arrayEach(iterator, array) {
+    for (var i = 0; i < array.length; i += 1) {
+        // Break iteration early if `iterator` returns `false`
+        if (iterator(array[i], i, array) === false) {
+            break;
+        }
+    }
+};
+/**
+ * Internal implementation of `each`. Works on objects.
+ *
+ * @name baseEach
+ * @api private
+ * @param {Function(value, key, collection)} iterator The function to invoke per iteration.
+ * @param {Object} object The object to iterate over.
+ * @return {undefined}
+ */
+var baseEach = function baseEach(iterator, object) {
+    var ks = keys(object);
+    for (var i = 0; i < ks.length; i += 1) {
+        // Break iteration early if `iterator` returns `false`
+        if (iterator(object[ks[i]], ks[i], object) === false) {
+            break;
+        }
+    }
+};
+/**
+ * Iterate over an input collection, invoking an `iterator` function for each element in the
+ * collection and passing to it three arguments: `(value, index, collection)`. The `iterator`
+ * function can end iteration early by returning `false`.
+ *
+ * @name each
+ * @api public
+ * @param {Function(value, key, collection)} iterator The function to invoke per iteration.
+ * @param {Array|Object|string} collection The collection to iterate over.
+ * @return {undefined} Because `each` is run only for side effects, always returns `undefined`.
+ * @example
+ * var log = console.log.bind(console);
+ *
+ * each(log, ['a', 'b', 'c']);
+ * //-> 'a', 0, ['a', 'b', 'c']
+ * //-> 'b', 1, ['a', 'b', 'c']
+ * //-> 'c', 2, ['a', 'b', 'c']
+ * //=> undefined
+ *
+ * each(log, 'tim');
+ * //-> 't', 2, 'tim'
+ * //-> 'i', 1, 'tim'
+ * //-> 'm', 0, 'tim'
+ * //=> undefined
+ *
+ * // Note: Iteration order not guaranteed across environments
+ * each(log, { name: 'tim', occupation: 'enchanter' });
+ * //-> 'tim', 'name', { name: 'tim', occupation: 'enchanter' }
+ * //-> 'enchanter', 'occupation', { name: 'tim', occupation: 'enchanter' }
+ * //=> undefined
+ */
+var each = function each(iterator, collection) {
+    return (isArrayLike(collection) ? arrayEach : baseEach).call(this, iterator, collection);
+};
+/*
+ * Exports.
+ */
+module.exports = each;
+
+},{"@ndhoule/keys":9}],27:[function(require,module,exports){
+'use strict';
+/*
+ * The MIT License (MIT)
+ * Copyright (c) 2015 Nathan Houle
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
+/*
+ * Module dependencies.
+ */
+var each = require('./each');
+/**
+ * Produce a new array by passing each value in the input `collection` through a transformative
+ * `iterator` function. The `iterator` function is passed three arguments:
+ * `(value, index, collection)`.
+ *
+ * @name map
+ * @api public
+ * @param {Function} iterator The transformer function to invoke per iteration.
+ * @param {Array} collection The collection to iterate over.
+ * @return {Array} A new array containing the results of each `iterator` invocation.
+ * @example
+ * var square = function(x) { return x * x; };
+ *
+ * map(square, [1, 2, 3]);
+ * //=> [1, 4, 9]
+ */
+var map = function map(iterator, collection) {
+    if (typeof iterator !== 'function') {
+        throw new TypeError('Expected a function but received a ' + typeof iterator);
+    }
+    var result = [];
+    each(function (val, i, collection) {
+        result.push(iterator(val, i, collection));
+    }, collection);
+    return result;
+};
+/*
+ * Exports.
+ */
+module.exports = map;
+
+},{"./each":26}],28:[function(require,module,exports){
 
 /**
  * Expose `debug()` as the module.
@@ -3285,136 +3184,11 @@ try {
   if (window.localStorage) debug.enable(localStorage.debug);
 } catch(e){}
 
-},{}],26:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 module.exports={
-  "name": "@segment/analytics.js-core",
-  "author": "Segment <friends@segment.com>",
-  "version": "3.10.1",
-  "description": "The hassle-free way to integrate analytics into any web application.",
-  "keywords": [
-    "analytics",
-    "analytics.js",
-    "segment",
-    "segment.io"
-  ],
-  "main": "lib/index.js",
-  "scripts": {
-    "test": "make test",
-    "lint": "eslint \"./{lib,test}/**/*.js\"",
-    "format": "prettier-eslint --write --list-different \"./{lib,test}/**/*.{js,json,md}\"",
-    "precommit": "lint-staged",
-    "np": "np --no-publish",
-    "cz": "git-cz",
-    "commitmsg": "commitlint -E GIT_PARAMS"
-  },
-  "repository": {
-    "type": "git",
-    "url": "https://github.com/segmentio/analytics.js-core"
-  },
-  "license": "SEE LICENSE IN LICENSE",
-  "bugs": {
-    "url": "https://github.com/segmentio/analytics.js-core/issues"
-  },
-  "homepage": "https://github.com/segmentio/analytics.js-core#readme",
-  "dependencies": {
-    "@ndhoule/clone": "^1.0.0",
-    "@ndhoule/defaults": "^2.0.1",
-    "@ndhoule/each": "^2.0.1",
-    "@ndhoule/extend": "^2.0.0",
-    "@ndhoule/foldl": "^2.0.1",
-    "@ndhoule/includes": "^2.0.1",
-    "@ndhoule/keys": "^2.0.0",
-    "@ndhoule/map": "^2.0.1",
-    "@ndhoule/pick": "^2.0.0",
-    "@segment/canonical": "^1.0.0",
-    "@segment/is-meta": "^1.0.0",
-    "@segment/isodate": "^1.0.2",
-    "@segment/isodate-traverse": "^1.0.1",
-    "@segment/prevent-default": "^1.0.0",
-    "@segment/send-json": "^3.0.0",
-    "@segment/store": "^1.3.20",
-    "@segment/top-domain": "^3.0.0",
-    "bind-all": "^1.0.0",
-    "component-cookie": "^1.1.2",
-    "component-emitter": "^1.2.1",
-    "component-event": "^0.1.4",
-    "component-querystring": "^2.0.0",
-    "component-type": "^1.2.1",
-    "component-url": "^0.2.1",
-    "debug": "^0.7.4",
-    "extend": "3.0.2",
-    "inherits": "^2.0.1",
-    "install": "^0.7.3",
-    "is": "^3.1.0",
-    "json3": "^3.3.2",
-    "new-date": "^1.0.0",
-    "next-tick": "^0.2.2",
-    "segmentio-facade": "^3.0.2",
-    "spark-md5": "^2.0.2",
-    "uuid": "^2.0.2"
-  },
-  "devDependencies": {
-    "@commitlint/cli": "^7.0.0",
-    "@commitlint/config-conventional": "^7.0.1",
-    "@segment/analytics.js-integration": "^3.2.1",
-    "@segment/eslint-config": "^4.0.0",
-    "browserify": "13.0.0",
-    "browserify-istanbul": "^2.0.0",
-    "codecov": "^3.0.2",
-    "commitizen": "^2.10.1",
-    "commitlint-circle": "^1.0.0",
-    "compat-trigger-event": "^1.0.0",
-    "component-each": "^0.2.6",
-    "cz-conventional-changelog": "^2.1.0",
-    "eslint": "^4.19.1",
-    "eslint-config-prettier": "^2.9.0",
-    "eslint-plugin-mocha": "^5.0.0",
-    "eslint-plugin-react": "^7.9.1",
-    "eslint-plugin-require-path-exists": "^1.1.8",
-    "husky": "^0.14.3",
-    "istanbul": "^0.4.3",
-    "jquery": "^3.2.1",
-    "karma": "1.3.0",
-    "karma-browserify": "^5.0.4",
-    "karma-chrome-launcher": "^1.0.1",
-    "karma-coverage": "^1.0.0",
-    "karma-junit-reporter": "^1.0.0",
-    "karma-mocha": "1.0.1",
-    "karma-phantomjs-launcher": "^1.0.0",
-    "karma-sauce-launcher": "^1.0.0",
-    "karma-spec-reporter": "0.0.26",
-    "karma-summary-reporter": "^1.5.0",
-    "lint-staged": "^7.2.0",
-    "mocha": "^2.2.5",
-    "np": "^3.0.4",
-    "phantomjs-prebuilt": "^2.1.7",
-    "prettier-eslint-cli": "^4.7.1",
-    "proclaim": "^3.4.1",
-    "sinon": "^1.7.3",
-    "snyk": "^1.83.0",
-    "watchify": "^3.7.0"
-  },
-  "commitlint": {
-    "extends": [
-      "@commitlint/config-conventional"
-    ]
-  },
-  "lint-staged": {
-    "linters": {
-      "*.{js,json,md}": [
-        "prettier-eslint --write",
-        "git add"
-      ]
-    }
-  },
-  "config": {
-    "commitizen": {
-      "path": "cz-conventional-changelog"
-    }
-  }
+  "version": "3.13.6"
 }
-
-},{}],27:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 'use strict';
 
 /**
@@ -3480,7 +3254,7 @@ function createIntegration(name) {
 
 module.exports = createIntegration;
 
-},{"./protos":28,"./statics":29,"@ndhoule/defaults":2,"component-bind":43,"debug":57,"extend":60,"slug-component":89}],28:[function(require,module,exports){
+},{"./protos":31,"./statics":32,"@ndhoule/defaults":2,"component-bind":47,"debug":61,"extend":64,"slug-component":93}],31:[function(require,module,exports){
 'use strict';
 
 /**
@@ -3949,7 +3723,7 @@ function render(template, locals) {
   }, {}, template.attrs);
 }
 
-},{"@ndhoule/each":4,"@ndhoule/every":5,"@ndhoule/foldl":7,"@segment/fmt":32,"@segment/load-script":36,"analytics-events":41,"component-emitter":50,"is":64,"load-iframe":67,"next-tick":73,"to-no-case":93}],29:[function(require,module,exports){
+},{"@ndhoule/each":4,"@ndhoule/every":5,"@ndhoule/foldl":7,"@segment/fmt":36,"@segment/load-script":40,"analytics-events":45,"component-emitter":54,"is":68,"load-iframe":71,"next-tick":77,"to-no-case":97}],32:[function(require,module,exports){
 'use strict';
 
 /**
@@ -4114,7 +3888,7 @@ function objectify(str) {
   };
 }
 
-},{"@ndhoule/each":4,"@ndhoule/includes":8,"component-emitter":50,"domify":59}],30:[function(require,module,exports){
+},{"@ndhoule/each":4,"@ndhoule/includes":8,"component-emitter":54,"domify":63}],33:[function(require,module,exports){
 var utf8Encode = require('utf8-encode');
 var keyStr = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
 
@@ -4151,7 +3925,7 @@ function encode(input) {
 
     return output;
 }
-},{"utf8-encode":97}],31:[function(require,module,exports){
+},{"utf8-encode":101}],34:[function(require,module,exports){
 'use strict';
 
 /**
@@ -4175,7 +3949,142 @@ function canonical() {
 
 module.exports = canonical;
 
-},{}],32:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
+'use strict';
+
+/**
+ * Module dependencies.
+ */
+
+var debug = require('debug')('cookie');
+
+/**
+ * Set or get cookie `name` with `value` and `options` object.
+ *
+ * @param {String} name
+ * @param {String} value
+ * @param {Object} options
+ * @return {Mixed}
+ * @api public
+ */
+
+module.exports = function(name, value, options) {
+  switch (arguments.length) {
+    case 3:
+    case 2:
+      return set(name, value, options);
+    case 1:
+      return get(name);
+    default:
+      return all();
+  }
+};
+
+/**
+ * Set cookie `name` to `value`.
+ *
+ * @param {String} name
+ * @param {String} value
+ * @param {Object} options
+ * @api private
+ */
+
+function set(name, value, options) {
+  options = options || {};
+  var str = encode(name) + '=' + encode(value);
+
+  if (value == null) options.maxage = -1;
+
+  if (options.maxage) {
+    options.expires = new Date(+new Date() + options.maxage);
+  }
+
+  if (options.path) str += '; path=' + options.path;
+  if (options.domain) str += '; domain=' + options.domain;
+  if (options.expires) str += '; expires=' + options.expires.toUTCString();
+  if (options.sameSite) str += '; SameSite=' + options.sameSite;
+  if (options.secure) str += '; secure';
+
+  document.cookie = str;
+}
+
+/**
+ * Return all cookies.
+ *
+ * @return {Object}
+ * @api private
+ */
+
+function all() {
+  var str;
+  try {
+    str = document.cookie;
+  } catch (err) {
+    if (typeof console !== 'undefined' && typeof console.error === 'function') {
+      console.error(err.stack || err);
+    }
+    return {};
+  }
+  return parse(str);
+}
+
+/**
+ * Get cookie `name`.
+ *
+ * @param {String} name
+ * @return {String}
+ * @api private
+ */
+
+function get(name) {
+  return all()[name];
+}
+
+/**
+ * Parse cookie `str`.
+ *
+ * @param {String} str
+ * @return {Object}
+ * @api private
+ */
+
+function parse(str) {
+  var obj = {};
+  var pairs = str.split(/ *; */);
+  var pair;
+  if (pairs[0] == '') return obj; // eslint-disable-line eqeqeq
+  for (var i = 0; i < pairs.length; ++i) {
+    pair = pairs[i].split('=');
+    obj[decode(pair[0])] = decode(pair[1]);
+  }
+  return obj;
+}
+
+/**
+ * Encode.
+ */
+
+function encode(value) {
+  try {
+    return encodeURIComponent(value);
+  } catch (e) {
+    debug('error `encode(%o)` - %o', value, e);
+  }
+}
+
+/**
+ * Decode.
+ */
+
+function decode(value) {
+  try {
+    return decodeURIComponent(value);
+  } catch (e) {
+    debug('error `decode(%o)` - %o', value, e);
+  }
+}
+
+},{"debug":61}],36:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -4210,7 +4119,7 @@ fmt.d = parseInt;
 module.exports = fmt;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],33:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 'use strict';
 
 function isMeta(e) {
@@ -4238,7 +4147,7 @@ function isMeta(e) {
 
 module.exports = isMeta;
 
-},{}],34:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 'use strict';
 
 var type = require('component-type');
@@ -4315,7 +4224,7 @@ function array(arr, strict) {
   return arr;
 }
 
-},{"@segment/isodate":35,"component-each":48,"component-type":55}],35:[function(require,module,exports){
+},{"@segment/isodate":39,"component-each":52,"component-type":59}],39:[function(require,module,exports){
 'use strict';
 
 /**
@@ -4396,7 +4305,7 @@ exports.is = function(string, strict) {
   return matcher.test(string);
 };
 
-},{}],36:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 'use strict';
 
 /*
@@ -4468,7 +4377,7 @@ function loadScript(options, cb) {
 
 module.exports = loadScript;
 
-},{"component-type":55,"next-tick":73,"script-onload":76}],37:[function(require,module,exports){
+},{"component-type":59,"next-tick":77,"script-onload":80}],41:[function(require,module,exports){
 'use strict';
 
 /**
@@ -4493,7 +4402,7 @@ function preventDefault(e) {
 
 module.exports = preventDefault;
 
-},{}],38:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 'use strict';
 
 /*
@@ -4611,7 +4520,7 @@ function encode(obj) {
   return encodeURIComponent(str);
 }
 
-},{"@segment/base64-encode":30,"has-cors":61,"json3":65,"jsonp":66}],39:[function(require,module,exports){
+},{"@segment/base64-encode":33,"has-cors":65,"json3":69,"jsonp":70}],43:[function(require,module,exports){
 (function (global){
 "use strict"
 
@@ -4784,7 +4693,7 @@ module.exports = (function() {
 }())
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"json3":65}],40:[function(require,module,exports){
+},{"json3":69}],44:[function(require,module,exports){
 'use strict';
 
 /**
@@ -4884,7 +4793,7 @@ domain.cookie = cookie;
 
 exports = module.exports = domain;
 
-},{"component-cookie":44,"component-url":56}],41:[function(require,module,exports){
+},{"component-cookie":48,"component-url":60}],45:[function(require,module,exports){
 'use strict';
 
 /**
@@ -5206,7 +5115,7 @@ module.exports = foldl(function transform(ret, pairs, method) {
   return ret;
 }, {}, eventMap);
 
-},{"@ndhoule/foldl":7,"@ndhoule/map":10}],42:[function(require,module,exports){
+},{"@ndhoule/foldl":7,"@ndhoule/map":10}],46:[function(require,module,exports){
 'use strict';
 
 var bind = require('component-bind');
@@ -5224,7 +5133,7 @@ function bindAll(obj) {
 
 module.exports = bindAll;
 
-},{"component-bind":43}],43:[function(require,module,exports){
+},{"component-bind":47}],47:[function(require,module,exports){
 /**
  * Slice reference.
  */
@@ -5249,7 +5158,7 @@ module.exports = function(obj, fn){
   }
 };
 
-},{}],44:[function(require,module,exports){
+},{}],48:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -5382,7 +5291,7 @@ function decode(value) {
   }
 }
 
-},{"debug":45}],45:[function(require,module,exports){
+},{"debug":49}],49:[function(require,module,exports){
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -5552,7 +5461,7 @@ function localstorage(){
   } catch (e) {}
 }
 
-},{"./debug":46}],46:[function(require,module,exports){
+},{"./debug":50}],50:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -5751,7 +5660,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":47}],47:[function(require,module,exports){
+},{"ms":51}],51:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -5878,7 +5787,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],48:[function(require,module,exports){
+},{}],52:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -5969,7 +5878,7 @@ function array(obj, fn, ctx) {
   }
 }
 
-},{"component-type":49,"to-function":92,"type":49}],49:[function(require,module,exports){
+},{"component-type":53,"to-function":96,"type":53}],53:[function(require,module,exports){
 
 /**
  * toString ref.
@@ -6003,7 +5912,7 @@ module.exports = function(val){
   return typeof val;
 };
 
-},{}],50:[function(require,module,exports){
+},{}],54:[function(require,module,exports){
 
 /**
  * Expose `Emitter`.
@@ -6180,7 +6089,7 @@ Emitter.prototype.hasListeners = function(event){
   return !! this.listeners(event).length;
 };
 
-},{}],51:[function(require,module,exports){
+},{}],55:[function(require,module,exports){
 var bind = window.addEventListener ? 'addEventListener' : 'attachEvent',
     unbind = window.removeEventListener ? 'removeEventListener' : 'detachEvent',
     prefix = bind !== 'addEventListener' ? 'on' : '';
@@ -6216,7 +6125,7 @@ exports.unbind = function(el, type, fn, capture){
   el[unbind](prefix + type, fn, capture || false);
   return fn;
 };
-},{}],52:[function(require,module,exports){
+},{}],56:[function(require,module,exports){
 /**
  * Global Names
  */
@@ -6303,7 +6212,7 @@ function prefixed(str) {
   };
 }
 
-},{}],53:[function(require,module,exports){
+},{}],57:[function(require,module,exports){
 
 /**
  * Module dependencies.
@@ -6410,7 +6319,7 @@ exports.stringify = function(obj){
   return pairs.join('&');
 };
 
-},{"trim":94,"type":54}],54:[function(require,module,exports){
+},{"trim":98,"type":58}],58:[function(require,module,exports){
 /**
  * toString ref.
  */
@@ -6446,7 +6355,7 @@ module.exports = function(val){
   return typeof val;
 };
 
-},{}],55:[function(require,module,exports){
+},{}],59:[function(require,module,exports){
 /**
  * toString ref.
  */
@@ -6494,7 +6403,7 @@ function isBuffer(obj) {
     ))
 }
 
-},{}],56:[function(require,module,exports){
+},{}],60:[function(require,module,exports){
 
 /**
  * Parse the given `url`.
@@ -6578,7 +6487,7 @@ function port (protocol){
   }
 }
 
-},{}],57:[function(require,module,exports){
+},{}],61:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -6767,7 +6676,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":58,"_process":75}],58:[function(require,module,exports){
+},{"./debug":62,"_process":79}],62:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -6971,7 +6880,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":68}],59:[function(require,module,exports){
+},{"ms":72}],63:[function(require,module,exports){
 
 /**
  * Expose `parse`.
@@ -7085,7 +6994,7 @@ function parse(html, doc) {
   return fragment;
 }
 
-},{}],60:[function(require,module,exports){
+},{}],64:[function(require,module,exports){
 'use strict';
 
 var hasOwn = Object.prototype.hasOwnProperty;
@@ -7204,7 +7113,7 @@ module.exports = function extend() {
 	return target;
 };
 
-},{}],61:[function(require,module,exports){
+},{}],65:[function(require,module,exports){
 
 /**
  * Module exports.
@@ -7223,7 +7132,7 @@ try {
   module.exports = false;
 }
 
-},{}],62:[function(require,module,exports){
+},{}],66:[function(require,module,exports){
 if (typeof Object.create === 'function') {
   // implementation from standard node.js 'util' module
   module.exports = function inherits(ctor, superCtor) {
@@ -7252,12 +7161,12 @@ if (typeof Object.create === 'function') {
   }
 }
 
-},{}],63:[function(require,module,exports){
+},{}],67:[function(require,module,exports){
 
 module.exports = function isEmail (string) {
     return (/.+\@.+\..+/).test(string);
 };
-},{}],64:[function(require,module,exports){
+},{}],68:[function(require,module,exports){
 /* globals window, HTMLElement */
 
 'use strict';
@@ -8077,7 +7986,7 @@ is.bigint = function (value) {
 
 module.exports = is;
 
-},{}],65:[function(require,module,exports){
+},{}],69:[function(require,module,exports){
 (function (global){
 /*! JSON v3.3.2 | https://bestiejs.github.io/json3 | Copyright 2012-2015, Kit Cambridge, Benjamin Tan | http://kit.mit-license.org */
 ;(function () {
@@ -9019,7 +8928,7 @@ module.exports = is;
 }).call(this);
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],66:[function(require,module,exports){
+},{}],70:[function(require,module,exports){
 /**
  * Module dependencies
  */
@@ -9118,7 +9027,7 @@ function jsonp(url, opts, fn){
   return cancel;
 }
 
-},{"debug":57}],67:[function(require,module,exports){
+},{"debug":61}],71:[function(require,module,exports){
 /**
  * Module dependencies.
  */
@@ -9180,7 +9089,7 @@ module.exports = function loadIframe(options, fn){
   return iframe;
 };
 
-},{"is":64,"next-tick":73,"script-onload":76}],68:[function(require,module,exports){
+},{"is":68,"next-tick":77,"script-onload":80}],72:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -9334,7 +9243,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],69:[function(require,module,exports){
+},{}],73:[function(require,module,exports){
 'use strict';
 
 var is = require('is');
@@ -9379,7 +9288,7 @@ function toMs(num) {
   return num;
 }
 
-},{"./milliseconds":70,"./seconds":71,"@segment/isodate":72,"is":64}],70:[function(require,module,exports){
+},{"./milliseconds":74,"./seconds":75,"@segment/isodate":76,"is":68}],74:[function(require,module,exports){
 'use strict';
 
 /**
@@ -9411,7 +9320,7 @@ exports.parse = function(millis) {
   return new Date(millis);
 };
 
-},{}],71:[function(require,module,exports){
+},{}],75:[function(require,module,exports){
 'use strict';
 
 /**
@@ -9443,7 +9352,7 @@ exports.parse = function(seconds) {
   return new Date(millis);
 };
 
-},{}],72:[function(require,module,exports){
+},{}],76:[function(require,module,exports){
 'use strict';
 
 /**
@@ -9521,7 +9430,7 @@ exports.is = function(string, strict) {
   return matcher.test(string);
 };
 
-},{}],73:[function(require,module,exports){
+},{}],77:[function(require,module,exports){
 (function (process,setImmediate){
 'use strict';
 
@@ -9589,7 +9498,7 @@ module.exports = (function () {
 }());
 
 }).call(this,require('_process'),require("timers").setImmediate)
-},{"_process":75,"timers":91}],74:[function(require,module,exports){
+},{"_process":79,"timers":95}],78:[function(require,module,exports){
 
 var identity = function(_){ return _; };
 
@@ -9743,7 +9652,7 @@ function isFunction(val) {
   return typeof val === 'function';
 }
 
-},{}],75:[function(require,module,exports){
+},{}],79:[function(require,module,exports){
 // shim for using process in browser
 var process = module.exports = {};
 
@@ -9929,7 +9838,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],76:[function(require,module,exports){
+},{}],80:[function(require,module,exports){
 
 // https://github.com/thirdpartyjs/thirdpartyjs-code/blob/master/examples/templates/02/loading-files/index.html
 
@@ -9984,7 +9893,7 @@ function attach(el, fn){
   });
 }
 
-},{}],77:[function(require,module,exports){
+},{}],81:[function(require,module,exports){
 'use strict';
 
 var get = require('obj-case');
@@ -10020,7 +9929,7 @@ module.exports = function(proto) {
   }
 };
 
-},{"obj-case":74}],78:[function(require,module,exports){
+},{"obj-case":78}],82:[function(require,module,exports){
 'use strict';
 
 var inherit = require('./utils').inherit;
@@ -10101,7 +10010,7 @@ Alias.prototype.to = Alias.prototype.userId;
 
 module.exports = Alias;
 
-},{"./facade":80,"./utils":88}],79:[function(require,module,exports){
+},{"./facade":84,"./utils":92}],83:[function(require,module,exports){
 'use strict';
 
 var inherit = require('./utils').inherit;
@@ -10135,7 +10044,7 @@ Delete.prototype.type = function() {
 
 module.exports = Delete;
 
-},{"./facade":80,"./utils":88}],80:[function(require,module,exports){
+},{"./facade":84,"./utils":92}],84:[function(require,module,exports){
 'use strict';
 
 var address = require('./address');
@@ -10681,7 +10590,7 @@ function transform(obj) {
 
 module.exports = Facade;
 
-},{"./address":77,"./is-enabled":84,"./utils":88,"@segment/isodate-traverse":34,"new-date":69,"obj-case":74}],81:[function(require,module,exports){
+},{"./address":81,"./is-enabled":88,"./utils":92,"@segment/isodate-traverse":38,"new-date":73,"obj-case":78}],85:[function(require,module,exports){
 'use strict';
 
 var inherit = require('./utils').inherit;
@@ -10848,7 +10757,7 @@ Group.prototype.properties = function() {
 
 module.exports = Group;
 
-},{"./facade":80,"./utils":88,"is-email":63,"new-date":69}],82:[function(require,module,exports){
+},{"./facade":84,"./utils":92,"is-email":67,"new-date":73}],86:[function(require,module,exports){
 'use strict';
 
 var Facade = require('./facade');
@@ -11228,7 +11137,7 @@ Identify.prototype.birthday = Facade.proxy('traits.birthday');
 
 module.exports = Identify;
 
-},{"./facade":80,"./utils":88,"is-email":63,"new-date":69,"obj-case":74,"trim":94}],83:[function(require,module,exports){
+},{"./facade":84,"./utils":92,"is-email":67,"new-date":73,"obj-case":78,"trim":98}],87:[function(require,module,exports){
 'use strict';
 
 var Facade = require('./facade');
@@ -11243,7 +11152,7 @@ Facade.Delete = require('./delete');
 
 module.exports = Facade;
 
-},{"./alias":78,"./delete":79,"./facade":80,"./group":81,"./identify":82,"./page":85,"./screen":86,"./track":87}],84:[function(require,module,exports){
+},{"./alias":82,"./delete":83,"./facade":84,"./group":85,"./identify":86,"./page":89,"./screen":90,"./track":91}],88:[function(require,module,exports){
 'use strict';
 
 // A few integrations are disabled by default. They must be explicitly enabled
@@ -11263,7 +11172,7 @@ module.exports = function(integration) {
   return !disabled[integration];
 };
 
-},{}],85:[function(require,module,exports){
+},{}],89:[function(require,module,exports){
 'use strict';
 
 var inherit = require('./utils').inherit;
@@ -11479,7 +11388,7 @@ Page.prototype.track = function(name) {
 
 module.exports = Page;
 
-},{"./facade":80,"./track":87,"./utils":88,"is-email":63}],86:[function(require,module,exports){
+},{"./facade":84,"./track":91,"./utils":92,"is-email":67}],90:[function(require,module,exports){
 'use strict';
 
 var inherit = require('./utils').inherit;
@@ -11551,7 +11460,7 @@ Screen.prototype.track = function(name) {
 
 module.exports = Screen;
 
-},{"./page":85,"./track":87,"./utils":88}],87:[function(require,module,exports){
+},{"./page":89,"./track":91,"./utils":92}],91:[function(require,module,exports){
 'use strict';
 
 var inherit = require('./utils').inherit;
@@ -12140,14 +12049,14 @@ function currency(val) {
 
 module.exports = Track;
 
-},{"./facade":80,"./identify":82,"./utils":88,"is-email":63,"obj-case":74}],88:[function(require,module,exports){
+},{"./facade":84,"./identify":86,"./utils":92,"is-email":67,"obj-case":78}],92:[function(require,module,exports){
 'use strict';
 
 exports.inherit = require('inherits');
 exports.clone = require('@ndhoule/clone');
 exports.type = require('type-component');
 
-},{"@ndhoule/clone":1,"inherits":62,"type-component":95}],89:[function(require,module,exports){
+},{"@ndhoule/clone":1,"inherits":66,"type-component":99}],93:[function(require,module,exports){
 
 /**
  * Generate a slug from the given `str`.
@@ -12172,7 +12081,7 @@ module.exports = function (str, options) {
     .replace(/ +/g, options.separator || '-')
 };
 
-},{}],90:[function(require,module,exports){
+},{}],94:[function(require,module,exports){
 (function (factory) {
     if (typeof exports === 'object') {
         // Node/CommonJS
@@ -12877,7 +12786,7 @@ module.exports = function (str, options) {
     return SparkMD5;
 }));
 
-},{}],91:[function(require,module,exports){
+},{}],95:[function(require,module,exports){
 (function (setImmediate,clearImmediate){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -12956,7 +12865,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":75,"timers":91}],92:[function(require,module,exports){
+},{"process/browser.js":79,"timers":95}],96:[function(require,module,exports){
 
 /**
  * Module Dependencies
@@ -13110,7 +13019,7 @@ function stripNested (prop, str, val) {
   });
 }
 
-},{"component-props":52,"props":52}],93:[function(require,module,exports){
+},{"component-props":56,"props":56}],97:[function(require,module,exports){
 
 /**
  * Expose `toNoCase`.
@@ -13182,7 +13091,7 @@ function uncamelize (string) {
     return previous + ' ' + uppers.toLowerCase().split('').join(' ');
   });
 }
-},{}],94:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 
 exports = module.exports = trim;
 
@@ -13198,7 +13107,7 @@ exports.right = function(str){
   return str.replace(/\s*$/, '');
 };
 
-},{}],95:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 
 /**
  * toString ref.
@@ -13230,7 +13139,7 @@ module.exports = function(val){
   return typeof val;
 };
 
-},{}],96:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 (function (global){
 (function(global) {
   /**
@@ -13721,7 +13630,7 @@ module.exports = function(val){
 );
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],97:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 module.exports = encode;
 
 function encode(string) {
@@ -13749,7 +13658,7 @@ function encode(string) {
 
     return utftext;
 }
-},{}],98:[function(require,module,exports){
+},{}],102:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -13882,121 +13791,122 @@ var UTMParams = /*#__PURE__*/function () {
 
 var _default = UTMParams;
 exports["default"] = _default;
-},{"url-polyfill":96}],99:[function(require,module,exports){
-(function (global){
+},{"url-polyfill":100}],103:[function(require,module,exports){
+var v1 = require('./v1');
+var v4 = require('./v4');
 
-var rng;
+var uuid = v4;
+uuid.v1 = v1;
+uuid.v4 = v4;
 
-var crypto = global.crypto || global.msCrypto; // for IE 11
-if (crypto && crypto.getRandomValues) {
-  // WHATWG crypto-based RNG - http://wiki.whatwg.org/wiki/Crypto
-  // Moderately fast, high quality
-  var _rnds8 = new Uint8Array(16);
-  rng = function whatwgRNG() {
-    crypto.getRandomValues(_rnds8);
-    return _rnds8;
-  };
+module.exports = uuid;
+
+},{"./v1":106,"./v4":107}],104:[function(require,module,exports){
+/**
+ * Convert array of 16 byte values to UUID string format of the form:
+ * XXXXXXXX-XXXX-XXXX-XXXX-XXXXXXXXXXXX
+ */
+var byteToHex = [];
+for (var i = 0; i < 256; ++i) {
+  byteToHex[i] = (i + 0x100).toString(16).substr(1);
 }
 
-if (!rng) {
+function bytesToUuid(buf, offset) {
+  var i = offset || 0;
+  var bth = byteToHex;
+  // join used to fix memory issue caused by concatenation: https://bugs.chromium.org/p/v8/issues/detail?id=3175#c4
+  return ([
+    bth[buf[i++]], bth[buf[i++]],
+    bth[buf[i++]], bth[buf[i++]], '-',
+    bth[buf[i++]], bth[buf[i++]], '-',
+    bth[buf[i++]], bth[buf[i++]], '-',
+    bth[buf[i++]], bth[buf[i++]], '-',
+    bth[buf[i++]], bth[buf[i++]],
+    bth[buf[i++]], bth[buf[i++]],
+    bth[buf[i++]], bth[buf[i++]]
+  ]).join('');
+}
+
+module.exports = bytesToUuid;
+
+},{}],105:[function(require,module,exports){
+// Unique ID creation requires a high quality random # generator.  In the
+// browser this is a little complicated due to unknown quality of Math.random()
+// and inconsistent support for the `crypto` API.  We do the best we can via
+// feature-detection
+
+// getRandomValues needs to be invoked in a context where "this" is a Crypto
+// implementation. Also, find the complete implementation of crypto on IE11.
+var getRandomValues = (typeof(crypto) != 'undefined' && crypto.getRandomValues && crypto.getRandomValues.bind(crypto)) ||
+                      (typeof(msCrypto) != 'undefined' && typeof window.msCrypto.getRandomValues == 'function' && msCrypto.getRandomValues.bind(msCrypto));
+
+if (getRandomValues) {
+  // WHATWG crypto RNG - http://wiki.whatwg.org/wiki/Crypto
+  var rnds8 = new Uint8Array(16); // eslint-disable-line no-undef
+
+  module.exports = function whatwgRNG() {
+    getRandomValues(rnds8);
+    return rnds8;
+  };
+} else {
   // Math.random()-based (RNG)
   //
   // If all else fails, use Math.random().  It's fast, but is of unspecified
   // quality.
-  var  _rnds = new Array(16);
-  rng = function() {
+  var rnds = new Array(16);
+
+  module.exports = function mathRNG() {
     for (var i = 0, r; i < 16; i++) {
       if ((i & 0x03) === 0) r = Math.random() * 0x100000000;
-      _rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
+      rnds[i] = r >>> ((i & 0x03) << 3) & 0xff;
     }
 
-    return _rnds;
+    return rnds;
   };
 }
 
-module.exports = rng;
-
-
-}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],100:[function(require,module,exports){
-//     uuid.js
-//
-//     Copyright (c) 2010-2012 Robert Kieffer
-//     MIT License - http://opensource.org/licenses/mit-license.php
-
-// Unique ID creation requires a high quality random # generator.  We feature
-// detect to determine the best RNG source, normalizing to a function that
-// returns 128-bits of randomness, since that's what's usually required
-var _rng = require('./rng');
-
-// Maps for number <-> hex string conversion
-var _byteToHex = [];
-var _hexToByte = {};
-for (var i = 0; i < 256; i++) {
-  _byteToHex[i] = (i + 0x100).toString(16).substr(1);
-  _hexToByte[_byteToHex[i]] = i;
-}
-
-// **`parse()` - Parse a UUID into it's component bytes**
-function parse(s, buf, offset) {
-  var i = (buf && offset) || 0, ii = 0;
-
-  buf = buf || [];
-  s.toLowerCase().replace(/[0-9a-f]{2}/g, function(oct) {
-    if (ii < 16) { // Don't overflow!
-      buf[i + ii++] = _hexToByte[oct];
-    }
-  });
-
-  // Zero out remaining bytes if string was short
-  while (ii < 16) {
-    buf[i + ii++] = 0;
-  }
-
-  return buf;
-}
-
-// **`unparse()` - Convert UUID byte array (ala parse()) into a string**
-function unparse(buf, offset) {
-  var i = offset || 0, bth = _byteToHex;
-  return  bth[buf[i++]] + bth[buf[i++]] +
-          bth[buf[i++]] + bth[buf[i++]] + '-' +
-          bth[buf[i++]] + bth[buf[i++]] + '-' +
-          bth[buf[i++]] + bth[buf[i++]] + '-' +
-          bth[buf[i++]] + bth[buf[i++]] + '-' +
-          bth[buf[i++]] + bth[buf[i++]] +
-          bth[buf[i++]] + bth[buf[i++]] +
-          bth[buf[i++]] + bth[buf[i++]];
-}
+},{}],106:[function(require,module,exports){
+var rng = require('./lib/rng');
+var bytesToUuid = require('./lib/bytesToUuid');
 
 // **`v1()` - Generate time-based UUID**
 //
 // Inspired by https://github.com/LiosK/UUID.js
 // and http://docs.python.org/library/uuid.html
 
-// random #'s we need to init node and clockseq
-var _seedBytes = _rng();
-
-// Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
-var _nodeId = [
-  _seedBytes[0] | 0x01,
-  _seedBytes[1], _seedBytes[2], _seedBytes[3], _seedBytes[4], _seedBytes[5]
-];
-
-// Per 4.2.2, randomize (14 bit) clockseq
-var _clockseq = (_seedBytes[6] << 8 | _seedBytes[7]) & 0x3fff;
+var _nodeId;
+var _clockseq;
 
 // Previous uuid creation time
-var _lastMSecs = 0, _lastNSecs = 0;
+var _lastMSecs = 0;
+var _lastNSecs = 0;
 
-// See https://github.com/broofa/node-uuid for API details
+// See https://github.com/uuidjs/uuid for API details
 function v1(options, buf, offset) {
   var i = buf && offset || 0;
   var b = buf || [];
 
   options = options || {};
-
+  var node = options.node || _nodeId;
   var clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq;
+
+  // node and clockseq need to be initialized to random values if they're not
+  // specified.  We do this lazily to minimize issues related to insufficient
+  // system entropy.  See #189
+  if (node == null || clockseq == null) {
+    var seedBytes = rng();
+    if (node == null) {
+      // Per 4.5, create and 48-bit node id, (47 random bits + multicast bit = 1)
+      node = _nodeId = [
+        seedBytes[0] | 0x01,
+        seedBytes[1], seedBytes[2], seedBytes[3], seedBytes[4], seedBytes[5]
+      ];
+    }
+    if (clockseq == null) {
+      // Per 4.2.2, randomize (14 bit) clockseq
+      clockseq = _clockseq = (seedBytes[6] << 8 | seedBytes[7]) & 0x3fff;
+    }
+  }
 
   // UUID timestamps are 100 nano-second units since the Gregorian epoch,
   // (1582-10-15 00:00).  JSNumbers aren't precise enough for this, so
@@ -14057,28 +13967,29 @@ function v1(options, buf, offset) {
   b[i++] = clockseq & 0xff;
 
   // `node`
-  var node = options.node || _nodeId;
-  for (var n = 0; n < 6; n++) {
+  for (var n = 0; n < 6; ++n) {
     b[i + n] = node[n];
   }
 
-  return buf ? buf : unparse(b);
+  return buf ? buf : bytesToUuid(b);
 }
 
-// **`v4()` - Generate random UUID**
+module.exports = v1;
 
-// See https://github.com/broofa/node-uuid for API details
+},{"./lib/bytesToUuid":104,"./lib/rng":105}],107:[function(require,module,exports){
+var rng = require('./lib/rng');
+var bytesToUuid = require('./lib/bytesToUuid');
+
 function v4(options, buf, offset) {
-  // Deprecated - 'format' argument, as supported in v1.2
   var i = buf && offset || 0;
 
   if (typeof(options) == 'string') {
-    buf = options == 'binary' ? new Array(16) : null;
+    buf = options === 'binary' ? new Array(16) : null;
     options = null;
   }
   options = options || {};
 
-  var rnds = options.random || (options.rng || _rng)();
+  var rnds = options.random || (options.rng || rng)();
 
   // Per 4.4, set bits for version and `clock_seq_hi_and_reserved`
   rnds[6] = (rnds[6] & 0x0f) | 0x40;
@@ -14086,24 +13997,17 @@ function v4(options, buf, offset) {
 
   // Copy bytes to buffer, if provided
   if (buf) {
-    for (var ii = 0; ii < 16; ii++) {
+    for (var ii = 0; ii < 16; ++ii) {
       buf[i + ii] = rnds[ii];
     }
   }
 
-  return buf || unparse(rnds);
+  return buf || bytesToUuid(rnds);
 }
 
-// Export public API
-var uuid = v4;
-uuid.v1 = v1;
-uuid.v4 = v4;
-uuid.parse = parse;
-uuid.unparse = unparse;
+module.exports = v4;
 
-module.exports = uuid;
-
-},{"./rng":99}],101:[function(require,module,exports){
+},{"./lib/bytesToUuid":104,"./lib/rng":105}],108:[function(require,module,exports){
 module.exports={
   "name": "prime-analytics",
   "version": "1.0.5",
@@ -14123,8 +14027,8 @@ module.exports={
     "clean:all": "yarn clean && rimraf node_modules"
   },
   "dependencies": {
-    "@segment/analytics.js-core": "3.10.1",
-    "@segment/analytics.js-integration": "^3.2.1",
+    "@segment/analytics.js-core": "3.13.6",
+    "@segment/analytics.js-integration": "3.3.2",
     "extend": "^3.0.2",
     "utm-params-saver": "^1.0.15"
   },
@@ -14142,7 +14046,7 @@ module.exports={
   }
 }
 
-},{}],102:[function(require,module,exports){
+},{}],109:[function(require,module,exports){
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14797,7 +14701,8 @@ Prime.prototype.extractFormData = function (form) {
     }
     return params;
 };
-},{"@segment/analytics.js-integration":27,"component-cookie":44,"extend":60,"utm-params-saver":98}],103:[function(require,module,exports){
+},{"@segment/analytics.js-integration":30,"component-cookie":48,"extend":64,"utm-params-saver":102}],110:[function(require,module,exports){
+(function (global){
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14848,7 +14753,23 @@ exports.VERSION = require('../package.json').version;
 for (var integration in Integrations) {
     analytics.use(Integrations[integration]);
 }
-},{"../package.json":101,"./integrations":104,"@segment/analytics.js-core":17}],104:[function(require,module,exports){
+var analyticsq = global.analytics || [];
+var args;
+var method;
+
+for (var queueI = 0; queueI < analyticsq.length; queueI++) {
+    args = analyticsq[queueI];
+    method = args.length && args[0];
+    if (
+        typeof analytics[method] === 'function'
+    ) {
+        args.shift();
+        analytics[method].apply(analytics, args);
+    }
+}
+
+}).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
+},{"../package.json":108,"./integrations":111,"@segment/analytics.js-core":17}],111:[function(require,module,exports){
 /*
  * Licensed to the Apache Software Foundation (ASF) under one or more
  * contributor license agreements.  See the NOTICE file distributed with
@@ -14872,5 +14793,5 @@ module.exports = {
     'prime-data': require('./analytics.js-integration-prime-data')
 };
 
-},{"./analytics.js-integration-prime-data":102}]},{},[103])(103)
+},{"./analytics.js-integration-prime-data":109}]},{},[110])(110)
 });

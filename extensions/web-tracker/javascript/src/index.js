@@ -48,3 +48,17 @@ exports.VERSION = require('../package.json').version;
 for (var integration in Integrations) {
     analytics.use(Integrations[integration]);
 }
+var analyticsq = global.analytics || [];
+var args;
+var method;
+
+for (var queueI = 0; queueI < analyticsq.length; queueI++) {
+    args = analyticsq[queueI];
+    method = args.length && args[0];
+    if (
+        typeof analytics[method] === 'function'
+    ) {
+        args.shift();
+        analytics[method].apply(analytics, args);
+    }
+}
