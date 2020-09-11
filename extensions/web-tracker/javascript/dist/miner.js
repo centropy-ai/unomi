@@ -1,4 +1,4 @@
-(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.analytics = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+(function(f){if(typeof exports==="object"&&typeof module!=="undefined"){module.exports=f()}else if(typeof define==="function"&&define.amd){define([],f)}else{var g;if(typeof window!=="undefined"){g=window}else if(typeof global!=="undefined"){g=global}else if(typeof self!=="undefined"){g=self}else{g=this}g.follower = f()}})(function(){var define,module,exports;return (function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
 'use strict';
 
 /*
@@ -1053,7 +1053,6 @@ Analytics.prototype.addIntegrationMiddleware = function (middleware) {
  * Define a new `DestinationMiddleware`
  * Destination Middleware is chained after integration middleware
  */
-// TODO remove `unknown`
 Analytics.prototype.addDestinationMiddleware = function (integrationName, middlewares) {
     var self = this;
     middlewares.forEach(function (middleware) {
@@ -1863,6 +1862,7 @@ module.exports.Cookie = Cookie;
 
 },{"./utils/clone":25,"@ndhoule/defaults":2,"@segment/cookie":35,"@segment/top-domain":44,"bind-all":46,"debug":28}],15:[function(require,module,exports){
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 /*
  * Module dependencies.
  */
@@ -1880,8 +1880,6 @@ var isodateTraverse = require('@segment/isodate-traverse');
 module.exports = Entity;
 /**
  * Initialize new `Entity` with `options`.
- *
- * @param {Object} options
  */
 function Entity(options) {
     this.options(options);
@@ -1918,11 +1916,6 @@ Entity.prototype.storage = function () {
 };
 /**
  * Get or set storage `options`.
- *
- * @param {Object} options
- *   @property {Object} cookie
- *   @property {Object} localStorage
- *   @property {Boolean} persist (default: `true`)
  */
 Entity.prototype.options = function (options) {
     if (arguments.length === 0)
@@ -1931,8 +1924,6 @@ Entity.prototype.options = function (options) {
 };
 /**
  * Get or set the entity's `id`.
- *
- * @param {String} id
  */
 Entity.prototype.id = function (id) {
     switch (arguments.length) {
@@ -1946,8 +1937,6 @@ Entity.prototype.id = function (id) {
 };
 /**
  * Get the entity's id.
- *
- * @return {String}
  */
 Entity.prototype._getId = function () {
     if (!this._options.persist) {
@@ -1969,16 +1958,14 @@ Entity.prototype._getId = function () {
 };
 /**
  * Get the entity's id from cookies.
- *
- * @return {String}
  */
+// FIXME `options.cookie` is an optional field, so `this._options.cookie.key`
+// can thrown an exception.
 Entity.prototype._getIdFromCookie = function () {
     return this.storage().get(this._options.cookie.key);
 };
 /**
  * Get the entity's id from cookies.
- *
- * @return {String}
  */
 Entity.prototype._getIdFromLocalStorage = function () {
     if (!this._options.localStorageFallbackDisabled) {
@@ -1988,8 +1975,6 @@ Entity.prototype._getIdFromLocalStorage = function () {
 };
 /**
  * Set the entity's `id`.
- *
- * @param {String} id
  */
 Entity.prototype._setId = function (id) {
     if (this._options.persist) {
@@ -2002,16 +1987,12 @@ Entity.prototype._setId = function (id) {
 };
 /**
  * Set the entity's `id` in cookies.
- *
- * @param {String} id
  */
 Entity.prototype._setIdInCookies = function (id) {
     this.storage().set(this._options.cookie.key, id);
 };
 /**
  * Set the entity's `id` in local storage.
- *
- * @param {String} id
  */
 Entity.prototype._setIdInLocalStorage = function (id) {
     if (!this._options.localStorageFallbackDisabled) {
@@ -2022,8 +2003,6 @@ Entity.prototype._setIdInLocalStorage = function (id) {
  * Get or set the entity's `traits`.
  *
  * BACKWARDS COMPATIBILITY: aliased to `properties`
- *
- * @param {Object} traits
  */
 Entity.prototype.properties = Entity.prototype.traits = function (traits) {
     switch (arguments.length) {
@@ -2038,8 +2017,6 @@ Entity.prototype.properties = Entity.prototype.traits = function (traits) {
 /**
  * Get the entity's traits. Always convert ISO date strings into real dates,
  * since they aren't parsed back from local storage.
- *
- * @return {Object}
  */
 Entity.prototype._getTraits = function () {
     var ret = this._options.persist
@@ -2049,8 +2026,6 @@ Entity.prototype._getTraits = function () {
 };
 /**
  * Set the entity's `traits`.
- *
- * @param {Object} traits
  */
 Entity.prototype._setTraits = function (traits) {
     traits = traits || {};
@@ -2064,9 +2039,6 @@ Entity.prototype._setTraits = function (traits) {
 /**
  * Identify the entity with an `id` and `traits`. If we it's the same entity,
  * extend the existing `traits` instead of overwriting.
- *
- * @param {String} id
- * @param {Object} traits
  */
 Entity.prototype.identify = function (id, traits) {
     traits = traits || {};
@@ -2081,8 +2053,6 @@ Entity.prototype.identify = function (id, traits) {
 };
 /**
  * Save the entity to local storage and the cookie.
- *
- * @return {Boolean}
  */
 Entity.prototype.save = function () {
     if (!this._options.persist)
@@ -2118,6 +2088,7 @@ Entity.prototype.load = function () {
 
 },{"./cookie":14,"./memory":18,"./store":23,"./utils/clone":25,"@ndhoule/defaults":2,"@ndhoule/extend":6,"@segment/isodate-traverse":38,"debug":28}],16:[function(require,module,exports){
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 /*
  * Module dependencies.
  */
@@ -2139,8 +2110,6 @@ Group.defaults = {
 };
 /**
  * Initialize a new `Group` with `options`.
- *
- * @param {Object} options
  */
 function Group(options) {
     this.defaults = Group.defaults;
@@ -2162,6 +2131,7 @@ module.exports.Group = Group;
 
 },{"./entity":15,"bind-all":46,"debug":28,"inherits":66}],17:[function(require,module,exports){
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Analytics.js
  *
@@ -2203,10 +2173,6 @@ function Memory() {
 }
 /**
  * Set a `key` and `value`.
- *
- * @param {String} key
- * @param {Mixed} value
- * @return {Boolean}
  */
 Memory.prototype.set = function (key, value) {
     this.store[key] = clone(value);
@@ -2214,8 +2180,6 @@ Memory.prototype.set = function (key, value) {
 };
 /**
  * Get a `key`.
- *
- * @param {String} key
  */
 Memory.prototype.get = function (key) {
     if (!has.call(this.store, key))
@@ -2224,9 +2188,6 @@ Memory.prototype.get = function (key) {
 };
 /**
  * Remove a `key`.
- *
- * @param {String} key
- * @return {Boolean}
  */
 Memory.prototype.remove = function (key) {
     delete this.store[key];
@@ -2235,6 +2196,7 @@ Memory.prototype.remove = function (key) {
 
 },{"./utils/clone":25,"bind-all":46}],19:[function(require,module,exports){
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 var bindAll = require('bind-all');
 var send = require('@segment/send-json');
 var debug = require('debug')('analytics.js:metrics');
@@ -2243,11 +2205,6 @@ function Metrics(options) {
 }
 /**
  * Set the metrics options.
- *
- * @param {Object} options
- *   @field {String} host
- *   @field {Number} sampleRate
- *   @field {Number} flushTimer
  */
 Metrics.prototype.options = function (options) {
     options = options || {};
@@ -2265,9 +2222,6 @@ Metrics.prototype.options = function (options) {
 };
 /**
  * Increments the counter identified by name and tags by one.
- *
- * @param {String} metric Name of the metric to increment.
- * @param {Object} tags Dimensions associated with the metric.
  */
 Metrics.prototype.increment = function (metric, tags) {
     if (Math.random() > this.sampleRate) {
@@ -2396,6 +2350,7 @@ module.exports.middlewareChain = middlewareChain;
 
 },{"segmentio-facade":87}],21:[function(require,module,exports){
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 /**
  * Module Dependencies.
  */
@@ -2419,13 +2374,6 @@ module.exports = normalize;
  * Toplevel properties.
  */
 var toplevel = ['integrations', 'anonymousId', 'timestamp', 'context'];
-/**
- * Normalize `msg` based on integrations `list`.
- *
- * @param {Object} msg
- * @param {Array} list
- * @return {Function}
- */
 function normalize(msg, list) {
     var lower = map(function (s) {
         return s.toLowerCase();
@@ -2457,7 +2405,7 @@ function normalize(msg, list) {
     }, providers);
     // move all toplevel options to msg
     // and the rest to context.
-    each(function (value, key) {
+    each(function (_value, key) {
         if (includes(key, toplevel)) {
             ret[key] = opts[key];
         }
@@ -2483,6 +2431,7 @@ function normalize(msg, list) {
 
 },{"./utils/each":26,"./utils/map":27,"@ndhoule/defaults":2,"@ndhoule/includes":8,"component-type":59,"debug":28,"spark-md5":94,"uuid/v4":107}],22:[function(require,module,exports){
 'use strict';
+Object.defineProperty(exports, "__esModule", { value: true });
 /*
  * Module dependencies.
  */
@@ -2493,8 +2442,6 @@ var url = require('component-url');
  * Return a default `options.context.page` object.
  *
  * https://segment.com/docs/spec/page/#properties
- *
- * @return {Object}
  */
 function pageDefaults() {
     return {
@@ -2507,8 +2454,6 @@ function pageDefaults() {
 }
 /**
  * Return the canonical path for the page.
- *
- * @return {string}
  */
 function canonicalPath() {
     var canon = canonical();
@@ -2520,9 +2465,6 @@ function canonicalPath() {
 /**
  * Return the canonical URL for the page concat the given `search`
  * and strip the hash.
- *
- * @param {string} search
- * @return {string}
  */
 function canonicalUrl(search) {
     var canon = canonical();
@@ -2555,9 +2497,6 @@ function Store(options) {
 }
 /**
  * Set the `options` for the store.
- *
- * @param {Object} options
- *   @field {Boolean} enabled (true)
  */
 Store.prototype.options = function (options) {
     if (arguments.length === 0)
@@ -2569,9 +2508,6 @@ Store.prototype.options = function (options) {
 };
 /**
  * Set a `key` and `value` in local storage.
- *
- * @param {string} key
- * @param {Object} value
  */
 Store.prototype.set = function (key, value) {
     if (!this.enabled)
@@ -2580,9 +2516,6 @@ Store.prototype.set = function (key, value) {
 };
 /**
  * Get a value from local storage by `key`.
- *
- * @param {string} key
- * @return {Object}
  */
 Store.prototype.get = function (key) {
     if (!this.enabled)
@@ -2591,8 +2524,6 @@ Store.prototype.get = function (key) {
 };
 /**
  * Remove a value from local storage by `key`.
- *
- * @param {string} key
  */
 Store.prototype.remove = function (key) {
     if (!this.enabled)
@@ -2610,9 +2541,7 @@ module.exports.Store = Store;
 
 },{"@ndhoule/defaults":2,"@segment/store":43,"bind-all":46}],24:[function(require,module,exports){
 'use strict';
-/*
- * Module dependencies.
- */
+Object.defineProperty(exports, "__esModule", { value: true });
 var Entity = require('./entity');
 var bindAll = require('bind-all');
 var cookie = require('./cookie');
@@ -2621,9 +2550,6 @@ var inherit = require('inherits');
 var rawCookie = require('@segment/cookie');
 var uuid = require('uuid');
 var localStorage = require('./store');
-/**
- * User defaults
- */
 User.defaults = {
     persist: true,
     cookie: {
@@ -2636,8 +2562,6 @@ User.defaults = {
 };
 /**
  * Initialize a new `User` with `options`.
- *
- * @param {Object} options
  */
 function User(options) {
     this.defaults = User.defaults;
@@ -2653,9 +2577,6 @@ inherit(User, Entity);
  *
  * When the user id changes, the method will reset his anonymousId to a new one.
  *
- * // FIXME: What are the mixed types?
- * @param {string} id
- * @return {Mixed}
  * @example
  * // didn't change because the user didn't have previous id.
  * anonymousId = user.anonymousId();
@@ -2738,8 +2659,6 @@ User.prototype.anonymousId = function (anonymousId) {
 };
 /**
  * Set the user's `anonymousid` in local storage.
- *
- * @param {String} id
  */
 User.prototype._setAnonymousIdInLocalStorage = function (id) {
     if (!this._options.localStorageFallbackDisabled) {
@@ -2765,7 +2684,6 @@ User.prototype.load = function () {
  * BACKWARDS COMPATIBILITY: Load the old user from the cookie.
  *
  * @api private
- * @return {boolean}
  */
 User.prototype._loadOldCookie = function () {
     var user = cookie.get(this._options.cookie.oldKey);
@@ -3186,7 +3104,7 @@ try {
 
 },{}],29:[function(require,module,exports){
 module.exports={
-  "version": "3.13.6"
+  "version": "3.13.9"
 }
 },{}],30:[function(require,module,exports){
 'use strict';
@@ -14019,7 +13937,7 @@ module.exports={
   "license": "Apache-2.0",
   "scripts": {
     "build": "yarn browserify && yarn replace && yarn minify",
-    "browserify": "browserify src/index.js  -s analytics -o dist/miner.js",
+    "browserify": "browserify src/index.js  -s follower -o dist/miner.js",
     "replace": "replace-in-file 'analytics.require = require' '//analytics.require = require' dist/miner.js",
     "minify": "uglifyjs -c -m --comments '/@license/' -o dist/miner.min.js -- dist/miner.js",
     "snippet:minify": "uglifyjs -c -m -o snippet.min.js --source-map snippet.min.js.map -- snippet.js",
@@ -14027,7 +13945,7 @@ module.exports={
     "clean:all": "yarn clean && rimraf node_modules"
   },
   "dependencies": {
-    "@segment/analytics.js-core": "3.13.6",
+    "@segment/analytics.js-core": "v3.13.9",
     "@segment/analytics.js-integration": "3.3.2",
     "extend": "^3.0.2",
     "utm-params-saver": "^1.0.15"
@@ -14066,7 +13984,7 @@ module.exports={
 'use strict';
 
 var integration = require('@segment/analytics.js-integration');
-var extend  = require('extend');
+var extend = require('extend');
 
 var Prime = (module.exports = integration('Prime Data')
     .global('cxs')
@@ -14074,7 +13992,7 @@ var Prime = (module.exports = integration('Prime Data')
     .readyOnLoad()
     .option('scope', '')
     .option('writeKey', '')
-    .option('sessionTimeOut', 30*60*1000)
+    .option('sessionTimeOut', 30 * 60 * 1000)
     .option('url', 'http://localhost:8181')
     .option('timeoutInMilliseconds', 3000)
     .option('sessionCookieName', 'XSessionId')
@@ -14085,17 +14003,21 @@ var Prime = (module.exports = integration('Prime Data')
  *
  * @api public
  */
-Prime.prototype.initialize = function() {
+Prime.prototype.initialize = function () {
     var self = this;
-    this.analytics.on('invoke', function(msg) {
+    this.analytics.on('invoke', function (msg) {
         var action = msg.action();
         var listener = 'on' + msg.action();
         self.debug('%s %o', action, msg);
         if (self[listener]) self[listener](msg);
     });
 
-    this.analytics.personalize = function(personalization, callback) {
-        this.emit('invoke', {action:function() {return "personalize"}, personalization:personalization, callback:callback});
+    this.analytics.personalize = function (personalization, callback) {
+        this.emit('invoke', {
+            action: function () {
+                return "personalize"
+            }, personalization: personalization, callback: callback
+        });
     };
 
     // Standard to check if cookies are enabled in this browser
@@ -14112,7 +14034,7 @@ Prime.prototype.initialize = function() {
     window.digitalData.page = window.digitalData.page || {
         pageInfo: {
             pageName: document.title,
-            pagePath : location.pathname + location.hash,
+            pagePath: location.pathname + location.hash,
             destinationURL: location.href
         }
     }
@@ -14120,7 +14042,7 @@ Prime.prototype.initialize = function() {
     var primePage = window.digitalData.page;
     var context = this.context();
     if (!primePage) {
-        primePage = window.digitalData.page = { pageInfo:{} }
+        primePage = window.digitalData.page = {pageInfo: {}}
     }
     if (self.options.initialPageProperties) {
         var props = self.options.initialPageProperties;
@@ -14139,7 +14061,7 @@ Prime.prototype.initialize = function() {
  * @api private
  * @return {boolean}
  */
-Prime.prototype.loaded = function() {
+Prime.prototype.loaded = function () {
     return !!window.cxs;
 };
 
@@ -14149,14 +14071,14 @@ Prime.prototype.loaded = function() {
  * @api public
  * @param {Page} page
  */
-Prime.prototype.page = function(page) {
-    var primePage = { };
+Prime.prototype.page = function (page) {
+    var primePage = {};
     this.fillPageData(primePage, page.json().properties);
 
     this.collectEvent(this.buildEvent('view', this.buildPage(primePage), this.buildSource(location.href, 'page')));
 };
 
-Prime.prototype.fillPageData = function(primePage, props) {
+Prime.prototype.fillPageData = function (primePage, props) {
     primePage.attributes = [];
     primePage.consentTypes = [];
     primePage.interests = props.interests || {};
@@ -14169,7 +14091,7 @@ Prime.prototype.fillPageData = function(primePage, props) {
     this.processReferrer();
 };
 
-Prime.prototype.processReferrer = function() {
+Prime.prototype.processReferrer = function () {
     var referrerURL = document.referrer;
     if (referrerURL) {
         // parse referrer URL
@@ -14217,7 +14139,7 @@ Prime.prototype.processReferrer = function() {
  * @api public
  * @param {Identify} identify
  */
-Prime.prototype.identify = function(identify) {
+Prime.prototype.identify = function (identify) {
     this.collectEvent(this.buildEvent("identify",
         this.buildTarget(identify.userId(), "analyticsUser", identify.traits()),
         this.buildSource(location.href, 'page', identify.context())));
@@ -14229,13 +14151,13 @@ Prime.prototype.identify = function(identify) {
  * @api private
  * @param {Track} track
  */
-Prime.prototype.track = function(track) {
+Prime.prototype.track = function (track) {
     // we use the track event name to know that we are submitted a form because Analytics.js trackForm method doesn't give
     // us another way of knowing that we are processing a form.
     var arg = track.properties();
-    var target = arg.track || this.buildTargetPage();
+    var target = arg.target || this.buildTargetPage();
     var source = arg.source || this.buildSource(location.href, 'page', window.digitalData.page);
-    var props = arg.properties;
+    var props = arg.properties || arg;
     if (track.event() && track.event().indexOf("form") === 0) {
         var form = document.forms[track.properties().formName];
         var formEvent = this.buildFormEvent(form.name);
@@ -14285,7 +14207,6 @@ Prime.prototype.loadContext = function (skipEvents, invalidate) {
     var self = this;
 
     var onSuccess = function (xhr) {
-
         window.cxs = JSON.parse(xhr.responseText);
 
         self.ready();
@@ -14315,19 +14236,18 @@ Prime.prototype.loadContext = function (skipEvents, invalidate) {
         success: onSuccess,
         error: this.executeFallback
     });
-    console.info('[Tracker] Context loading...');
 };
 
 Prime.prototype.onpersonalize = function (msg) {
-    if (this.contextLoaded) {
-        console.error('[Tracker] Already loaded, too late...');
-        return;
+    if (!this.contextLoaded) {
+        window.digitalData = window.digitalData || {
+            scope: this.options.scope
+        };
+        window.digitalData.personalizationCallback = window.digitalData.personalizationCallback || [];
+        window.digitalData.personalizationCallback.push({personalization: msg.personalization, callback: msg.callback});
     }
-    window.digitalData = window.digitalData || {
-        scope: this.options.scope
-    };
-    window.digitalData.personalizationCallback = window.digitalData.personalizationCallback || [];
-    window.digitalData.personalizationCallback.push({personalization: msg.personalization, callback: msg.callback});
+    var self = this;
+    setTimeout(self.loadContext.bind(self), 0);
 };
 
 /**
@@ -14614,7 +14534,7 @@ Prime.prototype.executeFallback = function () {
     }
 };
 
-Prime.prototype.extendSessionID = function(){
+Prime.prototype.extendSessionID = function () {
     if (!this.options.sessionId) {
         var cookie = require('component-cookie');
 
@@ -14638,7 +14558,11 @@ Prime.prototype.context = function () {
     var height = window.innerHeight
         || document.documentElement.clientHeight
         || document.body.clientHeight;
-    var connectionType = navigator.connection.type || navigator.connection.effectiveType;
+    try {
+        var connectionType = navigator.connection.type || navigator.connection.effectiveType;
+    }catch (e) {
+        connectionType = "unknown-"+navigator.platform
+    }
     var data = utm.default.parse()
     data.screen_width = width;
     data.screen_height = height;
@@ -14650,7 +14574,7 @@ Prime.prototype.extractFormData = function (form) {
     var params = {};
     for (var i = 0; i < form.elements.length; i++) {
         var e = form.elements[i];
-        if (typeof(e.name) != 'undefined') {
+        if (typeof (e.name) != 'undefined') {
             switch (e.nodeName) {
                 case 'TEXTAREA':
                 case 'INPUT':
@@ -14753,7 +14677,7 @@ exports.VERSION = require('../package.json').version;
 for (var integration in Integrations) {
     analytics.use(Integrations[integration]);
 }
-var analyticsq = global.analytics || [];
+var analyticsq = global.follower || [];
 var args;
 var method;
 

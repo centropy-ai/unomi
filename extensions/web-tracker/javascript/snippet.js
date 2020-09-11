@@ -1,86 +1,11 @@
-/*
- * Licensed to the Apache Software Foundation (ASF) under one or more
- * contributor license agreements.  See the NOTICE file distributed with
- * this work for additional information regarding copyright ownership.
- * The ASF licenses this file to You under the Apache License, Version 2.0
- * (the "License"); you may not use this file except in compliance with
- * the License.  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-window.unomiTracker || (window.unomiTracker = {});
-(function () {
-    var unomiTracker_queue = [];
+var opts = {
+    scope: 'web-1e89gMA7K9pdl4lnwUJLToaQhnB',
+    url: 'http://localhost:8000',
+    writeKey: '1e89gM8JEdb58WtnLnclquehGnQ'
+};
 
-    var methods = ['trackSubmit', 'trackClick', 'trackLink', 'trackForm', 'initialize', 'pageview', 'identify', 'reset', 'group', 'track', 'ready', 'alias', 'debug', 'page', 'once', 'off', 'on', 'personalize'];
-
-    var factory = function (method) {
-        return function () {
-            var args = Array.prototype.slice.call(arguments);
-            args.unshift(method);
-            unomiTracker_queue.push(args);
-            return window.unomiTracker;
-        };
-    };
-
-    // For each of our methods, generate a queueing stub.
-    for (var i = 0; i < methods.length; i++) {
-        var method = methods[i];
-        window.unomiTracker[method] = factory(method);
-    }
-
-    function callback(e) {
-        unomiTracker.initialize({
-            'Apache Unomi': unomiOption
-        });
-
-        // Loop through the interim analytics queue and reapply the calls to their
-        // proper analytics.js method.
-        while (unomiTracker_queue.length > 0) {
-            var item = unomiTracker_queue.shift();
-            var method = item.shift();
-            if (unomiTracker[method]) {
-                unomiTracker[method].apply(unomiTracker, item);
-            }
-        }
-    }
-
-    // Define a method to load Analytics.js from our CDN,
-    // and that will be sure to only ever load it once.
-    unomiTracker.load = function() {
-        // Create an async script element based on your key.
-        var script = document.createElement('script');
-        script.type = 'text/javascript';
-        script.async = true;
-        // TODO we might want to add a check on the url to see if it ends with / or not
-        script.src = unomiOption.url + '/tracker/unomi-tracker.min.js';
-
-        if (script.addEventListener) {
-            script.addEventListener('load', function (e) {
-                if (typeof callback === 'function') {
-                    callback(e);
-                }
-            }, false);
-        } else {
-            script.onreadystatechange = function () {
-                if (this.readyState === 'complete' || this.readyState === 'loaded') {
-                    callback(window.event);
-                }
-            };
-        }
-
-        // Insert our script next to the first script element.
-        var first = document.getElementsByTagName('script')[0];
-        first.parentNode.insertBefore(script, first);
-    };
-
-    document.addEventListener('DOMContentLoaded', unomiTracker.load);
-
-    unomiTracker.page();
-})();
+!function(){var follower=window.follower=window.follower||[];if(!follower.initialize)if(follower.invoked)window.console&&console.error&&console.error("Segment snippet included twice.");else{follower.invoked=!0;follower.methods=["trackSubmit","trackClick","trackLink","trackForm","pageview","personalize","identify","initialize","reset","group","track","ready","alias","debug","page","once","off","on","addSourceMiddleware","addIntegrationMiddleware","setAnonymousId","addDestinationMiddleware"];follower.factory=function(t){return function(){var e=Array.prototype.slice.call(arguments);e.unshift(t);follower.push(e);return follower}};for(var t=0;t<follower.methods.length;t++){var e=follower.methods[t];follower[e]=follower.factory(e)}follower.load=function(t,e){var n=document.createElement("script");n.type="text/javascript";n.async=!0;n.src="//localhost:8000/miner.min.js";var a=document.getElementsByTagName("script")[0];a.parentNode.insertBefore(n,a);follower._loadOptions=e};follower.SNIPPET_VERSION="0.1.0";
+    follower.load();
+    follower.initialize({"Prime Data": opts})
+    follower.track("Play Game")
+}}();

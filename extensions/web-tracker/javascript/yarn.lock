@@ -77,10 +77,10 @@
   resolved "https://registry.yarnpkg.com/@ndhoule/rest/-/rest-2.0.0.tgz#0346b02a964a513ed2ba24d164f01d34f2107a0f"
   integrity sha1-A0awKpZKUT7SuiTRZPAdNPIQeg8=
 
-"@segment/analytics.js-core@3.13.6":
-  version "3.13.6"
-  resolved "https://registry.yarnpkg.com/@segment/analytics.js-core/-/analytics.js-core-3.13.6.tgz#3bebd1038b5186fc439709a3ffa62c2b1c609a2c"
-  integrity sha512-90k5H6a4/2fagoKu72XQlcrUBw38PsP/K41yln8I4filV4g4dFfdE5L3PZErCWC2xBaywt0EMPiFv6Q+rfH0uw==
+"@segment/analytics.js-core@v3.13.9":
+  version "3.13.9"
+  resolved "https://registry.yarnpkg.com/@segment/analytics.js-core/-/analytics.js-core-3.13.9.tgz#b5358369c55409b0a96a16d89e82bca25beb0dfa"
+  integrity sha512-2cKETBI3sg44wZWMCaJrlhaYMzY/OlL621xtAN6KB9WKSbdI6f369N/p0cVq0vdK8oh/eNihnF6l2UWO516ozA==
   dependencies:
     "@ndhoule/defaults" "^2.0.1"
     "@ndhoule/extend" "^2.0.0"

@@ -17,7 +17,7 @@
 'use strict';
 
 var integration = require('@segment/analytics.js-integration');
-var extend  = require('extend');
+var extend = require('extend');
 
 var Prime = (module.exports = integration('Prime Data')
     .global('cxs')
@@ -25,7 +25,7 @@ var Prime = (module.exports = integration('Prime Data')
     .readyOnLoad()
     .option('scope', '')
     .option('writeKey', '')
-    .option('sessionTimeOut', 30*60*1000)
+    .option('sessionTimeOut', 30 * 60 * 1000)
     .option('url', 'http://localhost:8181')
     .option('timeoutInMilliseconds', 3000)
     .option('sessionCookieName', 'XSessionId')
@@ -36,17 +36,21 @@ var Prime = (module.exports = integration('Prime Data')
  *
  * @api public
  */
-Prime.prototype.initialize = function() {
+Prime.prototype.initialize = function () {
     var self = this;
-    this.analytics.on('invoke', function(msg) {
+    this.analytics.on('invoke', function (msg) {
         var action = msg.action();
         var listener = 'on' + msg.action();
         self.debug('%s %o', action, msg);
         if (self[listener]) self[listener](msg);
     });
 
-    this.analytics.personalize = function(personalization, callback) {
-        this.emit('invoke', {action:function() {return "personalize"}, personalization:personalization, callback:callback});
+    this.analytics.personalize = function (personalization, callback) {
+        this.emit('invoke', {
+            action: function () {
+                return "personalize"
+            }, personalization: personalization, callback: callback
+        });
     };
 
     // Standard to check if cookies are enabled in this browser
@@ -63,7 +67,7 @@ Prime.prototype.initialize = function() {
     window.digitalData.page = window.digitalData.page || {
         pageInfo: {
             pageName: document.title,
-            pagePath : location.pathname + location.hash,
+            pagePath: location.pathname + location.hash,
             destinationURL: location.href
         }
     }
@@ -71,7 +75,7 @@ Prime.prototype.initialize = function() {
     var primePage = window.digitalData.page;
     var context = this.context();
     if (!primePage) {
-        primePage = window.digitalData.page = { pageInfo:{} }
+        primePage = window.digitalData.page = {pageInfo: {}}
     }
     if (self.options.initialPageProperties) {
         var props = self.options.initialPageProperties;
@@ -90,7 +94,7 @@ Prime.prototype.initialize = function() {
  * @api private
  * @return {boolean}
  */
-Prime.prototype.loaded = function() {
+Prime.prototype.loaded = function () {
     return !!window.cxs;
 };
 
@@ -100,14 +104,14 @@ Prime.prototype.loaded = function() {
  * @api public
  * @param {Page} page
  */
-Prime.prototype.page = function(page) {
-    var primePage = { };
+Prime.prototype.page = function (page) {
+    var primePage = {};
     this.fillPageData(primePage, page.json().properties);
 
     this.collectEvent(this.buildEvent('view', this.buildPage(primePage), this.buildSource(location.href, 'page')));
 };
 
-Prime.prototype.fillPageData = function(primePage, props) {
+Prime.prototype.fillPageData = function (primePage, props) {
     primePage.attributes = [];
     primePage.consentTypes = [];
     primePage.interests = props.interests || {};
@@ -120,7 +124,7 @@ Prime.prototype.fillPageData = function(primePage, props) {
     this.processReferrer();
 };
 
-Prime.prototype.processReferrer = function() {
+Prime.prototype.processReferrer = function () {
     var referrerURL = document.referrer;
     if (referrerURL) {
         // parse referrer URL
@@ -168,7 +172,7 @@ Prime.prototype.processReferrer = function() {
  * @api public
  * @param {Identify} identify
  */
-Prime.prototype.identify = function(identify) {
+Prime.prototype.identify = function (identify) {
     this.collectEvent(this.buildEvent("identify",
         this.buildTarget(identify.userId(), "analyticsUser", identify.traits()),
         this.buildSource(location.href, 'page', identify.context())));
@@ -180,13 +184,13 @@ Prime.prototype.identify = function(identify) {
  * @api private
  * @param {Track} track
  */
-Prime.prototype.track = function(track) {
+Prime.prototype.track = function (track) {
     // we use the track event name to know that we are submitted a form because Analytics.js trackForm method doesn't give
     // us another way of knowing that we are processing a form.
     var arg = track.properties();
-    var target = arg.track || this.buildTargetPage();
+    var target = arg.target || this.buildTargetPage();
     var source = arg.source || this.buildSource(location.href, 'page', window.digitalData.page);
-    var props = arg.properties;
+    var props = arg.properties || arg;
     if (track.event() && track.event().indexOf("form") === 0) {
         var form = document.forms[track.properties().formName];
         var formEvent = this.buildFormEvent(form.name);
@@ -236,7 +240,6 @@ Prime.prototype.loadContext = function (skipEvents, invalidate) {
     var self = this;
 
     var onSuccess = function (xhr) {
-
         window.cxs = JSON.parse(xhr.responseText);
 
         self.ready();
@@ -266,19 +269,18 @@ Prime.prototype.loadContext = function (skipEvents, invalidate) {
         success: onSuccess,
         error: this.executeFallback
     });
-    console.info('[Tracker] Context loading...');
 };
 
 Prime.prototype.onpersonalize = function (msg) {
-    if (this.contextLoaded) {
-        console.error('[Tracker] Already loaded, too late...');
-        return;
+    if (!this.contextLoaded) {
+        window.digitalData = window.digitalData || {
+            scope: this.options.scope
+        };
+        window.digitalData.personalizationCallback = window.digitalData.personalizationCallback || [];
+        window.digitalData.personalizationCallback.push({personalization: msg.personalization, callback: msg.callback});
     }
-    window.digitalData = window.digitalData || {
-        scope: this.options.scope
-    };
-    window.digitalData.personalizationCallback = window.digitalData.personalizationCallback || [];
-    window.digitalData.personalizationCallback.push({personalization: msg.personalization, callback: msg.callback});
+    var self = this;
+    setTimeout(self.loadContext.bind(self), 0);
 };
 
 /**
@@ -565,7 +567,7 @@ Prime.prototype.executeFallback = function () {
     }
 };
 
-Prime.prototype.extendSessionID = function(){
+Prime.prototype.extendSessionID = function () {
     if (!this.options.sessionId) {
         var cookie = require('component-cookie');
 
@@ -589,7 +591,11 @@ Prime.prototype.context = function () {
     var height = window.innerHeight
         || document.documentElement.clientHeight
         || document.body.clientHeight;
-    var connectionType = navigator.connection.type || navigator.connection.effectiveType;
+    try {
+        var connectionType = navigator.connection.type || navigator.connection.effectiveType;
+    }catch (e) {
+        connectionType = "unknown-"+navigator.platform
+    }
     var data = utm.default.parse()
     data.screen_width = width;
     data.screen_height = height;
@@ -601,7 +607,7 @@ Prime.prototype.extractFormData = function (form) {
     var params = {};
     for (var i = 0; i < form.elements.length; i++) {
         var e = form.elements[i];
-        if (typeof(e.name) != 'undefined') {
+        if (typeof (e.name) != 'undefined') {
             switch (e.nodeName) {
                 case 'TEXTAREA':
                 case 'INPUT':

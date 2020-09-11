@@ -48,7 +48,7 @@ exports.VERSION = require('../package.json').version;
 for (var integration in Integrations) {
     analytics.use(Integrations[integration]);
 }
-var analyticsq = global.analytics || [];
+var analyticsq = global.follower || [];
 var args;
 var method;
 
