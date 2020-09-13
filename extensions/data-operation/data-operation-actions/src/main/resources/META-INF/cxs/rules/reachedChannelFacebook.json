@@ -18,14 +18,14 @@
         {
           "type": "eventPropertyCondition",
           "parameterValues": {
-            "propertyName": "properties.facebook.identifier_id",
+            "propertyName": "properties.facebook.channel_id",
             "comparisonOperator": "exists"
           }
         },
         {
           "type": "profilePropertyCondition",
           "parameterValues": {
-            "propertyName": "properties.channels_reachable.facebook.identifier_id",
+            "propertyName": "properties.channels_reachable.facebook.channel_id",
             "comparisonOperator": "missing"
           }
         }
@@ -36,8 +36,8 @@
   "actions": [
     {
       "parameterValues": {
-        "setPropertyName": "properties.channels_reachable.facebook.identifier_id",
-        "setPropertyValue": "eventProperty::properties.facebook.identifier_id",
+        "setPropertyName": "properties.channels_reachable.facebook.channel_id",
+        "setPropertyValue": "eventProperty::properties.facebook.channel_id",
         "storeInSession": false,
         "setPropertyStrategy": "setIfMissing"
       },
@@ -45,8 +45,8 @@
     },
     {
       "parameterValues": {
-        "setPropertyName": "properties.channels_reachable.facebook.identifier_id",
-        "setPropertyValue": "eventProperty::properties.facebook.identifier_id",
+        "setPropertyName": "properties.channels_reachable.facebook.channel_id",
+        "setPropertyValue": "eventProperty::properties.facebook.channel_id",
         "storeInSession": true,
         "setPropertyStrategy": "setIfMissing"
       },
