@@ -51,6 +51,42 @@
         "setPropertyStrategy": "setIfMissing"
       },
       "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.facebook.identifier_id",
+        "setPropertyValue": "eventProperty::properties.facebook.identifier_id",
+        "storeInSession": false,
+        "setPropertyStrategy": "setIfMissing"
+      },
+      "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.facebook.identifier_id",
+        "setPropertyValue": "eventProperty::properties.facebook.identifier_id",
+        "storeInSession": true,
+        "setPropertyStrategy": "setIfMissing"
+      },
+      "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.facebook.identifier_id",
+        "setPropertyValue": "eventProperty::properties.facebook.identifier_id",
+        "storeInSession": false,
+        "setPropertyStrategy": "setIfMissing"
+      },
+      "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.facebook.app_id",
+        "setPropertyValue": "eventProperty::properties.facebook.app_id",
+        "storeInSession": true,
+        "setPropertyStrategy": "setIfMissing"
+      },
+      "type": "setPropertyAction"
     }
   ]
 }
