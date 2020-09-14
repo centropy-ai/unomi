@@ -72,8 +72,8 @@
     },
     {
       "parameterValues": {
-        "setPropertyName": "properties.channels_reachable.facebook.identifier_id",
-        "setPropertyValue": "eventProperty::properties.facebook.identifier_id",
+        "setPropertyName": "properties.channels_reachable.facebook.app_id",
+        "setPropertyValue": "eventProperty::properties.facebook.app_id",
         "storeInSession": false,
         "setPropertyStrategy": "setIfMissing"
       },
