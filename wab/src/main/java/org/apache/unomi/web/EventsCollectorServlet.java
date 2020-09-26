@@ -119,8 +119,12 @@ public class EventsCollectorServlet extends HttpServlet {
         Profile profile = null;
         if (session == null) {
             String scope = "systemscope";
+            String foundProfileID = "";
             // Get the first available scope that is not equal to systemscope to create the session otherwise systemscope will be used
             for (Event event : eventsCollectorRequest.getEvents()) {
+                if (StringUtils.isBlank(foundProfileID)) {
+                    foundProfileID = event.getProfileId();
+                }
                 if (StringUtils.isNotBlank(event.getEventType())) {
                     if (StringUtils.isNotBlank(event.getScope()) && !event.getScope().equals("systemscope")) {
                         scope = event.getScope();
@@ -134,10 +138,16 @@ public class EventsCollectorServlet extends HttpServlet {
             String cookieProfileId = ServletCommon.getProfileIdCookieValue(request, profileIdCookieName);
             if (StringUtils.isNotBlank(cookieProfileId)) {
                 profile = profileService.load(cookieProfileId);
+            } else if (StringUtils.isNoneBlank(foundProfileID)) {
+                profile = profileService.load(foundProfileID);
             }
             if (profile == null) {
                 // Create non persisted profile to create the session
-                profile = new Profile("temp_" + Item.getKSUID());
+                String _profileID = foundProfileID;
+                if (_profileID.equals("")) {
+                    _profileID = "temp_" + Item.getKSUID();
+                }
+                profile = new Profile(_profileID);
                 profile.setProperty("firstVisit", timestamp);
             }
             /*
