@@ -51,6 +51,15 @@
         "setPropertyStrategy": "setIfMissing"
       },
       "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.channels",
+        "setPropertyValue": "onesignal",
+        "storeInSession": false,
+        "setPropertyStrategy": "addValue"
+      },
+      "type": "setPropertyAction"
     }
   ]
 }

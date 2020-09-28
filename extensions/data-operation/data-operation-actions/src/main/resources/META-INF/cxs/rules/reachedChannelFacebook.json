@@ -87,6 +87,15 @@
         "setPropertyStrategy": "setIfMissing"
       },
       "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.channels",
+        "setPropertyValue": "facebook",
+        "storeInSession": false,
+        "setPropertyStrategy": "addValue"
+      },
+      "type": "setPropertyAction"
     }
   ]
 }
