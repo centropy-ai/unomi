@@ -1,8 +1,8 @@
 {
   "metadata": {
     "id": "bufferEvent",
-    "name": "bufferEvent Event",
-    "description": "bufferEvent Event",
+    "name": "bufferEvent Event to Kafka",
+    "description": "bufferEvent Event to Kafka",
     "readOnly": false
   },
   "condition": {
