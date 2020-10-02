@@ -638,15 +638,19 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
 
     @Override
     public <T extends Item> PartialList<T> getAllItems(final Class<T> clazz, int offset, int size, String sortBy) {
+        return getAllItems(clazz, offset, size, sortBy, null);
+    }
+
+    @Override
+    public <T extends Item> PartialList<T> getAllItems(final Class<T> clazz, int offset, int size, String sortBy, String scrollTimeValidity) {
         long startTime = System.currentTimeMillis();
         try {
-            return query(QueryBuilders.matchAllQuery(), sortBy, clazz, offset, size, null, null);
+            return query(QueryBuilders.matchAllQuery(), sortBy, clazz, offset, size, null, scrollTimeValidity);
         } finally {
             if (metricsService != null && metricsService.isActivated()) {
                 metricsService.updateTimer(this.getClass().getName() + ".getAllItems", startTime);
             }
         }
-
     }
 
     @Override
@@ -1304,6 +1308,7 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
         }
     }
 
+
     @Override
     public <T extends Item> List<T> query(final Condition query, String sortBy, final Class<T> clazz) {
         return query(query, sortBy, clazz, 0, -1).getList();
@@ -1732,7 +1737,6 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
         return routing;
     }
 
-
     @Override
     public void refresh() {
         new InClassLoaderExecute<Boolean>(metricsService, this.getClass().getName() + ".refresh") {
@@ -1748,8 +1752,24 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
                 return true;
             }
         }.catchingExecuteInClassLoader(true);
-
     }
+
+    @Override
+    public <T extends Item> void refreshIndex(Class<T> clazz, Date dateHint){
+        new InClassLoaderExecute<Boolean>(metricsService, this.getClass().getName() + ".refreshIndex") {
+            protected Boolean execute(Object... args) {
+                try {
+                    String itemType = Item.getItemType(clazz);
+                    String index = getIndex(itemType, dateHint);
+                    client.indices().refresh(Requests.refreshRequest(index), RequestOptions.DEFAULT);
+                } catch (IOException e) {
+                    e.printStackTrace();//TODO manage ES7
+                }
+                return true;
+            }
+        }.catchingExecuteInClassLoader(true);
+    }
+
 
 
     @Override

@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.unomi.api.*;
+import org.apache.unomi.api.conditions.Condition;
 import org.apache.unomi.api.services.*;
 import org.apache.unomi.persistence.spi.CustomObjectMapper;
 import org.slf4j.Logger;
@@ -35,7 +36,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Writer;
 import java.util.*;
 
@@ -58,6 +58,8 @@ public class ContextServlet extends HttpServlet {
     private PrivacyService privacyService;
     private PersonalizationService personalizationService;
     private ConfigSharingService configSharingService;
+
+    private boolean sanitizeConditions = Boolean.parseBoolean(System.getProperty("org.apache.unomi.security.personalization.sanitizeConditions", "true"));
 
     @Override
     public void init(ServletConfig config) throws ServletException {
@@ -107,6 +109,7 @@ public class ContextServlet extends HttpServlet {
         ContextRequest contextRequest = null;
         String scope = null;
         String sessionId = null;
+        String profileId = null;
         String stringPayload = HttpUtils.getPayload(request);
         if (stringPayload != null) {
             ObjectMapper mapper = CustomObjectMapper.getObjectMapper();
@@ -122,18 +125,21 @@ public class ContextServlet extends HttpServlet {
                 scope = contextRequest.getSource().getScope();
             }
             sessionId = contextRequest.getSessionId();
+            profileId = contextRequest.getProfileId();
         }
 
         if (sessionId == null) {
             sessionId = request.getParameter("sessionId");
         }
 
-        // Get profile id from the cookie
-        String cookieProfileId = ServletCommon.getProfileIdCookieValue(request, profileIdCookieName);
+        if (profileId == null) {
+            // Get profile id from the cookie
+            profileId = ServletCommon.getProfileIdCookieValue(request, profileIdCookieName);
+        }
 
-        if (cookieProfileId == null && sessionId == null && personaId == null) {
+        if (profileId == null && sessionId == null && personaId == null) {
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_BAD_REQUEST, "Check logs for more details");
-            logger.error("Couldn't find cookieProfileId, sessionId or personaId in incoming request! Stopped processing request. See debug level for more information");
+            logger.error("Couldn't find profileId, sessionId or personaId in incoming request! Stopped processing request. See debug level for more information");
             if (logger.isDebugEnabled()) {
                 logger.debug("Request dump: {}", HttpUtils.dumpRequestInfo(request));
             }
@@ -147,16 +153,16 @@ public class ContextServlet extends HttpServlet {
 
             boolean invalidateProfile = request.getParameter("invalidateProfile") != null ?
                     new Boolean(request.getParameter("invalidateProfile")) : false;
-            if (cookieProfileId == null || invalidateProfile) {
+            if (profileId == null || invalidateProfile) {
                 // no profileId cookie was found or the profile has to be invalidated, we generate a new one and create the profile in the profile service
                 profile = createNewProfile(null, response, timestamp);
                 profileCreated = true;
             } else {
-                profile = profileService.load(cookieProfileId);
+                profile = profileService.load(profileId);
                 if (profile == null) {
                     // this can happen if we have an old cookie but have reset the server,
                     // or if we merged the profiles and somehow this cookie didn't get updated.
-                    profile = createNewProfile(null, response, timestamp);
+                    profile = createNewProfile(profileId, response, timestamp);
                     profileCreated = true;
                 } else {
                     Changes changesObject = checkMergedProfile(response, profile, session);
@@ -179,7 +185,11 @@ public class ContextServlet extends HttpServlet {
                         // We must reload the profile with the session ID as some properties could be missing from the session profile
                         // #personalIdentifier
                         profile = profileService.load(sessionProfile.getItemId());
-                        HttpUtils.sendProfileCookie(profile, response, profileIdCookieName, profileIdCookieDomain, profileIdCookieMaxAgeInSeconds);
+                        if (profile != null) {
+                            HttpUtils.sendProfileCookie(profile, response, profileIdCookieName, profileIdCookieDomain, profileIdCookieMaxAgeInSeconds);
+                        } else {
+                            logger.warn("Couldn't load profile {} referenced in session {}", sessionProfile.getItemId(), session.getItemId());
+                        }
                     }
 
                     // Handle anonymous situation
@@ -356,7 +366,7 @@ public class ContextServlet extends HttpServlet {
         List<PersonalizationService.PersonalizedContent> filterNodes = contextRequest.getFilters();
         if (filterNodes != null) {
             data.setFilteringResults(new HashMap<>());
-            for (PersonalizationService.PersonalizedContent personalizedContent : filterNodes) {
+            for (PersonalizationService.PersonalizedContent personalizedContent : sanitizePersonalizedContentObjects(filterNodes)) {
                 data.getFilteringResults().put(personalizedContent.getId(), personalizationService.filter(profile,
                         session, personalizedContent));
             }
@@ -365,7 +375,7 @@ public class ContextServlet extends HttpServlet {
         List<PersonalizationService.PersonalizationRequest> personalizations = contextRequest.getPersonalizations();
         if (personalizations != null) {
             data.setPersonalizations(new HashMap<>());
-            for (PersonalizationService.PersonalizationRequest personalization : personalizations) {
+            for (PersonalizationService.PersonalizationRequest personalization : sanitizePersonalizations(personalizations)) {
                 data.getPersonalizations().put(personalization.getId(), personalizationService.personalizeList(profile,
                         session, personalization));
             }
@@ -462,5 +472,90 @@ public class ContextServlet extends HttpServlet {
 
     public void setConfigSharingService(ConfigSharingService configSharingService) {
         this.configSharingService = configSharingService;
+    }
+
+    private List<PersonalizationService.PersonalizedContent> sanitizePersonalizedContentObjects(List<PersonalizationService.PersonalizedContent> personalizedContentObjects) {
+        if (!sanitizeConditions) {
+            return personalizedContentObjects;
+        }
+        List<PersonalizationService.PersonalizedContent> result = new ArrayList<>();
+        for (PersonalizationService.PersonalizedContent personalizedContentObject : personalizedContentObjects) {
+            boolean foundInvalidCondition = false;
+            if (personalizedContentObject.getFilters() != null) {
+                for (PersonalizationService.Filter filter : personalizedContentObject.getFilters()) {
+                    if (sanitizeCondition(filter.getCondition()) == null) {
+                        foundInvalidCondition = true;
+                        break;
+                    }
+                }
+            }
+            if (!foundInvalidCondition) {
+                result.add(personalizedContentObject);
+            }
+        }
+
+        return result;
+    }
+
+    private List<PersonalizationService.PersonalizationRequest> sanitizePersonalizations(List<PersonalizationService.PersonalizationRequest> personalizations) {
+        if (!sanitizeConditions) {
+            return personalizations;
+        }
+        List<PersonalizationService.PersonalizationRequest> result = new ArrayList<>();
+        for (PersonalizationService.PersonalizationRequest personalizationRequest : personalizations) {
+            List<PersonalizationService.PersonalizedContent> personalizedContents = sanitizePersonalizedContentObjects(personalizationRequest.getContents());
+            if (personalizedContents != null && personalizedContents.size() > 0) {
+                result.add(personalizationRequest);
+            }
+        }
+        return result;
+    }
+
+    private Condition sanitizeCondition(Condition condition) {
+        Map<String,Object> newParameterValues = new LinkedHashMap<>();
+        for (Map.Entry<String,Object> parameterEntry : condition.getParameterValues().entrySet()) {
+            Object sanitizedValue = sanitizeValue(parameterEntry.getValue());
+            if (sanitizedValue != null) {
+                newParameterValues.put(parameterEntry.getKey(), parameterEntry.getValue());
+            } else {
+                return null;
+            }
+        }
+        return condition;
+    }
+
+    private Object sanitizeValue(Object value) {
+        if (value instanceof String) {
+            String stringValue = (String) value;
+            if (stringValue.startsWith("script::") || stringValue.startsWith("parameter::")) {
+                logger.warn("Scripting detected in context request with value {}, filtering out...", value);
+                return null;
+            } else {
+                return stringValue;
+            }
+        } else if (value instanceof List) {
+            List values = (List) value;
+            List newValues = new ArrayList();
+            for (Object listObject : values) {
+                Object newObject = sanitizeValue(listObject);
+                if (newObject != null) {
+                    newValues.add(newObject);
+                }
+            }
+            return values;
+        } else if (value instanceof Map) {
+            Map<Object,Object> newMap = new LinkedHashMap<>();
+            ((Map<?, ?>) value).forEach((key, value1) -> {
+                Object newObject = sanitizeValue(value1);
+                if (newObject != null) {
+                    newMap.put(key, newObject);
+                }
+            });
+            return newMap;
+        } else if (value instanceof Condition) {
+            return sanitizeCondition((Condition) value);
+        } else {
+            return value;
+        }
     }
 }
