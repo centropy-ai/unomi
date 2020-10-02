@@ -21,6 +21,9 @@ import org.apache.unomi.api.CustomItem;
 import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Profile;
 import org.apache.unomi.api.Session;
+import org.apache.unomi.scripting.ExpressionFilter;
+import org.apache.unomi.scripting.ExpressionFilterFactory;
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
@@ -29,6 +32,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.regex.Pattern;
 
 import static junit.framework.TestCase.assertEquals;
 import static junit.framework.TestCase.assertNull;
@@ -44,10 +48,31 @@ public class PropertyConditionEvaluatorTest {
     public static final Date SESSION_LAST_EVENT_DATE = new Date();
     public static final int THREAD_POOL_SIZE = 300;
     public static final int WORKER_COUNT = 500000;
-    private static PropertyConditionEvaluator propertyConditionEvaluator = new PropertyConditionEvaluator();
-    private static Event mockEvent = generateMockEvent();
-    private static Profile mockProfile = generateMockProfile();
-    private static Session mockSession = generateMockSession();
+    private static final PropertyConditionEvaluator propertyConditionEvaluator = new PropertyConditionEvaluator();
+    private static final Event mockEvent = generateMockEvent();
+    private static final Profile mockProfile = generateMockProfile();
+    private static final Session mockSession = generateMockSession();
+
+    @Before
+    public void setup() {
+        propertyConditionEvaluator.setExpressionFilterFactory(new ExpressionFilterFactory() {
+            @Override
+            public ExpressionFilter getExpressionFilter(String filterCollection) {
+                Set<Pattern> allowedExpressions = new HashSet<>();
+                allowedExpressions.add(Pattern.compile("target\\.itemId"));
+                allowedExpressions.add(Pattern.compile("target\\.scope"));
+                allowedExpressions.add(Pattern.compile("target\\.properties\\.pageInfo\\.pagePath"));
+                allowedExpressions.add(Pattern.compile("target\\.properties\\.pageInfo\\.pageURL"));
+                allowedExpressions.add(Pattern.compile("size"));
+                allowedExpressions.add(Pattern.compile("lastEventDate"));
+                allowedExpressions.add(Pattern.compile("systemProperties\\.goals\\._csk6r4cgeStartReached"));
+                allowedExpressions.add(Pattern.compile("properties\\.email"));
+                allowedExpressions.add(Pattern.compile("systemProperties\\.goals\\._csk6r4cgeStartReached"));
+                Set<Pattern> forbiddenExpressions = new HashSet<>();
+                return new ExpressionFilter(allowedExpressions, forbiddenExpressions);
+            }
+        });
+    }
 
     @Test
     public void testHardcodedEvaluator() {
@@ -62,7 +87,7 @@ public class PropertyConditionEvaluatorTest {
         assertNull("Unexisting property should be null", propertyConditionEvaluator.getHardcodedPropertyValue(mockProfile, "properties.email"));
 
         // here let's make sure our reporting of non optimized expressions works.
-        assertEquals("Should have received the non-optimized marker string", NOT_OPTIMIZED_MARKER, propertyConditionEvaluator.getHardcodedPropertyValue(mockSession, "lastEventDate"));
+        assertEquals("Should have received the non-optimized marker string", NOT_OPTIMIZED_MARKER, propertyConditionEvaluator.getHardcodedPropertyValue(mockSession, "profile.itemId"));
 
     }
 
@@ -117,30 +142,39 @@ public class PropertyConditionEvaluatorTest {
         if (vulnFile.exists()) {
             vulnFile.delete();
         }
+        String vulnFileCanonicalPath = vulnFile.getCanonicalPath();
+        vulnFileCanonicalPath = vulnFileCanonicalPath.replace("\\", "\\\\"); // this is required for Windows support
         try {
-            propertyConditionEvaluator.getOGNLPropertyValue(mockEvent, "@java.lang.Runtime@getRuntime().exec('touch " + vulnFile.getCanonicalPath() + "')");
+            propertyConditionEvaluator.getOGNLPropertyValue(mockEvent, "@java.lang.Runtime@getRuntime().exec('touch " + vulnFileCanonicalPath + "')");
         } catch (RuntimeException | MethodFailedException re) {
             // we ignore these exceptions as they are expected.
         }
-        assertFalse("Vulnerability successfully executed ! File created at " + vulnFile.getCanonicalPath(), vulnFile.exists());
+        assertFalse("Vulnerability successfully executed ! File created at " + vulnFileCanonicalPath, vulnFile.exists());
         try {
-            propertyConditionEvaluator.getOGNLPropertyValue(mockEvent, "(#cmd='touch " + vulnFile.getCanonicalPath() + "').(#cmds={'bash','-c',#cmd}).(#p=new java.lang.ProcessBuilder(#cmds)).(#p.redirectErrorStream(true)).(#process=#p.start())");
-        } catch (RuntimeException | MethodFailedException re) {
-            // we ignore these exceptions as they are expected.
-        }
-        vulnFile = new File("target/vuln-file.txt");
-        assertFalse("Vulnerability successfully executed ! File created at " + vulnFile.getCanonicalPath(), vulnFile.exists());
-        try {
-            propertyConditionEvaluator.getOGNLPropertyValue(mockEvent, "(#cmd='touch " + vulnFile.getCanonicalPath() + "').(#iswin=(@java.lang.System@getProperty('os.name').toLowerCase().contains('win'))).(#cmds=(#iswin?{'cmd.exe','/c',#cmd}:{'bash','-c',#cmd})).(#p=new java.lang.ProcessBuilder(#cmds)).(#p.redirectErrorStream(true)).(#process=#p.start())");
+            propertyConditionEvaluator.getOGNLPropertyValue(mockEvent, "(#cmd='touch " + vulnFileCanonicalPath + "').(#cmds={'bash','-c',#cmd}).(#p=new java.lang.ProcessBuilder(#cmds)).(#p.redirectErrorStream(true)).(#process=#p.start())");
         } catch (RuntimeException | MethodFailedException re) {
             // we ignore these exceptions as they are expected.
         }
         vulnFile = new File("target/vuln-file.txt");
-        assertFalse("Vulnerability successfully executed ! File created at " + vulnFile.getCanonicalPath(), vulnFile.exists());
+        assertFalse("Vulnerability successfully executed ! File created at " + vulnFileCanonicalPath, vulnFile.exists());
+        try {
+            propertyConditionEvaluator.getOGNLPropertyValue(mockEvent, "(#cmd='touch " + vulnFileCanonicalPath + "').(#iswin=(@java.lang.System@getProperty('os.name').toLowerCase().contains('win'))).(#cmds=(#iswin?{'cmd.exe','/c',#cmd}:{'bash','-c',#cmd})).(#p=new java.lang.ProcessBuilder(#cmds)).(#p.redirectErrorStream(true)).(#process=#p.start())");
+        } catch (RuntimeException | MethodFailedException re) {
+            // we ignore these exceptions as they are expected.
+        }
+        vulnFile = new File("target/vuln-file.txt");
+        assertFalse("Vulnerability successfully executed ! File created at " + vulnFileCanonicalPath, vulnFile.exists());
+        try {
+            propertyConditionEvaluator.getOGNLPropertyValue(mockEvent, "(#runtimeclass = #this.getClass().forName(\"java.lang.Runtime\")).(#getruntimemethod = #runtimeclass.getDeclaredMethods().{^ #this.name.equals(\"getRuntime\")}[0]).(#rtobj = #getruntimemethod.invoke(null,null)).(#execmethod = #runtimeclass.getDeclaredMethods().{? #this.name.equals(\"exec\")}.{? #this.getParameters()[0].getType().getName().equals(\"java.lang.String\")}.{? #this.getParameters().length < 2}[0]).(#execmethod.invoke(#rtobj,\" touch "+vulnFileCanonicalPath+"\"))");
+        } catch (RuntimeException | MethodFailedException re) {
+            // we ignore these exceptions as they are expected.
+        }
+        vulnFile = new File("target/vuln-file.txt");
+        assertFalse("Vulnerability successfully executed ! File created at " + vulnFileCanonicalPath, vulnFile.exists());
     }
 
     private void runHardcodedTest(int workerCount, ExecutorService executorService) throws InterruptedException {
-        List<Callable<Object>> todo = new ArrayList<Callable<Object>>(workerCount);
+        List<Callable<Object>> todo = new ArrayList<>(workerCount);
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < workerCount; i++) {
             todo.add(new HardcodedWorker());
@@ -151,7 +185,7 @@ public class PropertyConditionEvaluatorTest {
     }
 
     private void runOGNLTest(int workerCount, ExecutorService executorService) throws InterruptedException {
-        List<Callable<Object>> todo = new ArrayList<Callable<Object>>(workerCount);
+        List<Callable<Object>> todo = new ArrayList<>(workerCount);
         long startTime = System.currentTimeMillis();
         for (int i = 0; i < workerCount; i++) {
             todo.add(new OGNLWorker());

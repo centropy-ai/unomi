@@ -374,17 +374,20 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
     }
 
     private <T extends Item> PartialList<T> doSearch(Query query, Class<T> clazz) {
+        if (query.getScrollIdentifier() != null) {
+            return persistenceService.continueScrollQuery(clazz, query.getScrollIdentifier(), query.getScrollTimeValidity());
+        }
         if (query.getCondition() != null && definitionsService.resolveConditionType(query.getCondition())) {
             if (StringUtils.isNotBlank(query.getText())) {
                 return persistenceService.queryFullText(query.getText(), query.getCondition(), query.getSortby(), clazz, query.getOffset(), query.getLimit());
             } else {
-                return persistenceService.query(query.getCondition(), query.getSortby(), clazz, query.getOffset(), query.getLimit());
+                return persistenceService.query(query.getCondition(), query.getSortby(), clazz, query.getOffset(), query.getLimit(), query.getScrollTimeValidity());
             }
         } else {
             if (StringUtils.isNotBlank(query.getText())) {
                 return persistenceService.queryFullText(query.getText(), query.getSortby(), clazz, query.getOffset(), query.getLimit());
             } else {
-                return persistenceService.getAllItems(clazz, query.getOffset(), query.getLimit(), query.getSortby());
+                return persistenceService.getAllItems(clazz, query.getOffset(), query.getLimit(), query.getSortby(), query.getScrollTimeValidity());
             }
         }
     }
@@ -524,11 +527,9 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
         profile.setSystemProperty("lastUpdated", new Date());
         if (persistenceService.save(profile)) {
             if (forceRefresh) {
-                // triggering a load will force an in-place refresh, that may be expensive in performance but will make data immediately available.
-                return persistenceService.load(profile.getItemId(), Profile.class);
-            } else {
-                return profile;
+                persistenceService.refreshIndex(Profile.class, null);
             }
+            return profile;
         }
         return null;
     }
