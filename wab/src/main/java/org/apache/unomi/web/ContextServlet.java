@@ -117,7 +117,7 @@ public class ContextServlet extends HttpServlet {
             try {
                 contextRequest = mapper.readValue(factory.createParser(stringPayload), ContextRequest.class);
             } catch (Exception e) {
-                ((HttpServletResponse)response).sendError(HttpServletResponse.SC_BAD_REQUEST, "Check logs for more details");
+                ((HttpServletResponse) response).sendError(HttpServletResponse.SC_BAD_REQUEST, "Check logs for more details");
                 logger.error("Cannot read payload " + stringPayload, e);
                 return;
             }
@@ -138,7 +138,7 @@ public class ContextServlet extends HttpServlet {
         }
 
         if (profileId == null && sessionId == null && personaId == null) {
-            ((HttpServletResponse)response).sendError(HttpServletResponse.SC_BAD_REQUEST, "Check logs for more details");
+            ((HttpServletResponse) response).sendError(HttpServletResponse.SC_BAD_REQUEST, "Check logs for more details");
             logger.error("Couldn't find profileId, sessionId or personaId in incoming request! Stopped processing request. See debug level for more information");
             if (logger.isDebugEnabled()) {
                 logger.debug("Request dump: {}", HttpUtils.dumpRequestInfo(request));
@@ -224,7 +224,7 @@ public class ContextServlet extends HttpServlet {
                     // Only save session and send event if a session id was provided, otherwise keep transient session
                     session = new Session(sessionId, sessionProfile, timestamp, contextRequest.getSendAt(), scope);
                     changes |= EventService.SESSION_UPDATED;
-                    Event event = new Event("sessionCreated", session, profile, scope, contextRequest.getEvents().get(0), session, timestamp);
+                    Event event = new Event("sessionCreated", session, profile, scope, contextRequest.getEvents().get(0), null, timestamp);
                     if (sessionProfile.isAnonymousProfile()) {
                         // Do not keep track of profile in event
                         event.setProfileId(null);
@@ -242,7 +242,7 @@ public class ContextServlet extends HttpServlet {
             if (profileCreated) {
                 changes |= EventService.PROFILE_UPDATED;
 
-                Event profileUpdated = new Event("profileUpdated", session, profile, scope, null, profile, timestamp);
+                Event profileUpdated = new Event("profileUpdated", session, profile, scope, null, null, timestamp);
                 profileUpdated.setPersistent(false);
                 profileUpdated.getAttributes().put(Event.HTTP_REQUEST_ATTRIBUTE, request);
                 profileUpdated.getAttributes().put(Event.HTTP_RESPONSE_ATTRIBUTE, response);
@@ -276,6 +276,7 @@ public class ContextServlet extends HttpServlet {
         if ((changes & EventService.SESSION_UPDATED) == EventService.SESSION_UPDATED && session != null) {
             profileService.saveSession(session);
             contextResponse.setSessionId(session.getItemId());
+            eventService.send(new Event("sessionUpdated", session, profile, scope, contextRequest.getEvents().get(0), null, timestamp));
         }
 
         if ((changes & EventService.ERROR) == EventService.ERROR) {
@@ -330,7 +331,7 @@ public class ContextServlet extends HttpServlet {
     }
 
     private Changes handleRequest(ContextRequest contextRequest, Session session, Profile profile, ContextResponse data,
-                                ServletRequest request, ServletResponse response, Date timestamp) {
+                                  ServletRequest request, ServletResponse response, Date timestamp) {
         Changes changes = ServletCommon.handleEvents(contextRequest.getEvents(), session, profile, request, response,
                 timestamp, contextRequest.getSendAt(),
                 privacyService, eventService);
@@ -398,6 +399,7 @@ public class ContextServlet extends HttpServlet {
      * The profile will be updated using the overrides attributes :
      * - profileOverrides for profile properties, segments and scores
      * - sessionPropertiesOverrides for session properties
+     *
      * @param contextRequest
      * @param profile
      * @param session
@@ -405,16 +407,16 @@ public class ContextServlet extends HttpServlet {
     private void processOverrides(ContextRequest contextRequest, Profile profile, Session session) {
         if (profile instanceof Persona) {
             if (contextRequest.getProfileOverrides() != null) {
-                if (contextRequest.getProfileOverrides().getScores()!=null) {
+                if (contextRequest.getProfileOverrides().getScores() != null) {
                     profile.setScores(contextRequest.getProfileOverrides().getScores());
                 }
-                if (contextRequest.getProfileOverrides().getSegments()!=null) {
+                if (contextRequest.getProfileOverrides().getSegments() != null) {
                     profile.setSegments(contextRequest.getProfileOverrides().getSegments());
                 }
-                if (contextRequest.getProfileOverrides().getProperties()!=null) {
+                if (contextRequest.getProfileOverrides().getProperties() != null) {
                     profile.setProperties(contextRequest.getProfileOverrides().getProperties());
                 }
-                if (contextRequest.getSessionPropertiesOverrides()!=null && session != null) {
+                if (contextRequest.getSessionPropertiesOverrides() != null && session != null) {
                     session.setProperties(contextRequest.getSessionPropertiesOverrides());
                 }
             }
@@ -512,8 +514,8 @@ public class ContextServlet extends HttpServlet {
     }
 
     private Condition sanitizeCondition(Condition condition) {
-        Map<String,Object> newParameterValues = new LinkedHashMap<>();
-        for (Map.Entry<String,Object> parameterEntry : condition.getParameterValues().entrySet()) {
+        Map<String, Object> newParameterValues = new LinkedHashMap<>();
+        for (Map.Entry<String, Object> parameterEntry : condition.getParameterValues().entrySet()) {
             Object sanitizedValue = sanitizeValue(parameterEntry.getValue());
             if (sanitizedValue != null) {
                 newParameterValues.put(parameterEntry.getKey(), parameterEntry.getValue());
@@ -544,7 +546,7 @@ public class ContextServlet extends HttpServlet {
             }
             return values;
         } else if (value instanceof Map) {
-            Map<Object,Object> newMap = new LinkedHashMap<>();
+            Map<Object, Object> newMap = new LinkedHashMap<>();
             ((Map<?, ?>) value).forEach((key, value1) -> {
                 Object newObject = sanitizeValue(value1);
                 if (newObject != null) {
