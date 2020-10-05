@@ -195,7 +195,7 @@ public class EventsCollectorServlet extends HttpServlet {
         if ((changes & EventService.SESSION_UPDATED) == EventService.SESSION_UPDATED) {
             if (session != null) {
                 profileService.saveSession(session);
-                this.eventService.send(new Event("sessionUpdated", session, profile, session.getScope(), eventsCollectorRequest.getEvents().get(0), null, timestamp));
+                this.eventService.send(new Event("sessionUpdated", session, profile, session.getScope(), eventsCollectorRequest.getEvents().get(0), session, timestamp));
             }
         }
         if ((changes & EventService.ERROR) == EventService.ERROR) {

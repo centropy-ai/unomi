@@ -224,7 +224,7 @@ public class ContextServlet extends HttpServlet {
                     // Only save session and send event if a session id was provided, otherwise keep transient session
                     session = new Session(sessionId, sessionProfile, timestamp, contextRequest.getSendAt(), scope);
                     changes |= EventService.SESSION_UPDATED;
-                    Event event = new Event("sessionCreated", session, profile, scope, contextRequest.getEvents().get(0), null, timestamp);
+                    Event event = new Event("sessionCreated", session, profile, scope, contextRequest.getEvents().get(0), session, timestamp);
                     if (sessionProfile.isAnonymousProfile()) {
                         // Do not keep track of profile in event
                         event.setProfileId(null);
@@ -276,7 +276,7 @@ public class ContextServlet extends HttpServlet {
         if ((changes & EventService.SESSION_UPDATED) == EventService.SESSION_UPDATED && session != null) {
             profileService.saveSession(session);
             contextResponse.setSessionId(session.getItemId());
-            eventService.send(new Event("sessionUpdated", session, profile, scope, contextRequest.getEvents().get(0), null, timestamp));
+            eventService.send(new Event("sessionUpdated", session, profile, scope, contextRequest.getEvents().get(0), session, timestamp));
         }
 
         if ((changes & EventService.ERROR) == EventService.ERROR) {
