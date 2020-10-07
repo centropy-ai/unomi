@@ -55,9 +55,7 @@ public class SetEventOccurenceCountAction implements ActionExecutor {
         andCondition.setParameter("operator", "and");
         ArrayList<Condition> conditions = new ArrayList<Condition>();
 
-        Condition eventCondition = (Condition) pastEventCondition.getParameter("eventCondition");
-        definitionsService.resolveConditionType(eventCondition);
-        conditions.add(eventCondition);
+        conditions.add(pastEventCondition);
 
         Condition c = new Condition(definitionsService.getConditionType("eventPropertyCondition"));
         c.setParameter("propertyName", "profileId");
