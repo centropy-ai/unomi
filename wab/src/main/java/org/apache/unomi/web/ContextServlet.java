@@ -140,9 +140,9 @@ public class ContextServlet extends HttpServlet {
         if (profileId == null && sessionId == null && personaId == null) {
             ((HttpServletResponse) response).sendError(HttpServletResponse.SC_BAD_REQUEST, "Check logs for more details");
             logger.error("Couldn't find profileId, sessionId or personaId in incoming request! Stopped processing request. See debug level for more information");
-            if (logger.isDebugEnabled()) {
-                logger.debug("Request dump: {}", HttpUtils.dumpRequestInfo(request));
-            }
+//            if (logger.isDebugEnabled()) {
+                logger.error("Request dump: {}", HttpUtils.dumpRequestInfo(request));
+//            }
             return;
         }
 
