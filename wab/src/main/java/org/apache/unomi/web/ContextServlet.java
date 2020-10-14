@@ -113,12 +113,10 @@ public class ContextServlet extends HttpServlet {
         String stringPayload = HttpUtils.getPayload(request);
         logger.info("request payload: " + stringPayload, request);
         if (stringPayload != null) {
-            logger.info("request context" );
             ObjectMapper mapper = CustomObjectMapper.getObjectMapper();
             JsonFactory factory = mapper.getFactory();
             try {
                 contextRequest = mapper.readValue(factory.createParser(stringPayload), ContextRequest.class);
-                logger.info("request contextRequest" , contextRequest);
 
             } catch (Exception e) {
                 ((HttpServletResponse) response).sendError(HttpServletResponse.SC_BAD_REQUEST, "Check logs for more details");
@@ -130,8 +128,6 @@ public class ContextServlet extends HttpServlet {
             }
             sessionId = contextRequest.getSessionId();
             profileId = contextRequest.getProfileId();
-            logger.info("request profileId: " + profileId);
-
         }
 
         if (sessionId == null) {
