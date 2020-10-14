@@ -111,7 +111,6 @@ public class ContextServlet extends HttpServlet {
         String sessionId = null;
         String profileId = null;
         String stringPayload = HttpUtils.getPayload(request);
-        logger.info("request payload " + stringPayload, request);
         if (stringPayload != null) {
             ObjectMapper mapper = CustomObjectMapper.getObjectMapper();
             JsonFactory factory = mapper.getFactory();
