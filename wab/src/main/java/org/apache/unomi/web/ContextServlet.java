@@ -76,7 +76,7 @@ public class ContextServlet extends HttpServlet {
         if (request.getParameter("timestamp") != null) {
             timestamp.setTime(Long.parseLong(request.getParameter("timestamp")));
         }
-
+        logger.error("Request dump: {}", HttpUtils.dumpRequestInfo(request));
         // set up CORS headers as soon as possible so that errors are not misconstrued on the client for CORS errors
         HttpUtils.setupCORSHeaders(request, response);
 
