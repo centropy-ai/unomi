@@ -76,7 +76,6 @@ public class ContextServlet extends HttpServlet {
         if (request.getParameter("timestamp") != null) {
             timestamp.setTime(Long.parseLong(request.getParameter("timestamp")));
         }
-        logger.error("Request dump: {}", HttpUtils.dumpRequestInfo(request));
         // set up CORS headers as soon as possible so that errors are not misconstrued on the client for CORS errors
         HttpUtils.setupCORSHeaders(request, response);
 
@@ -111,7 +110,6 @@ public class ContextServlet extends HttpServlet {
         String sessionId = null;
         String profileId = null;
         String stringPayload = HttpUtils.getPayload(request);
-        logger.info("request payload: " + stringPayload);
         if (stringPayload != null) {
             ObjectMapper mapper = CustomObjectMapper.getObjectMapper();
             JsonFactory factory = mapper.getFactory();
@@ -142,9 +140,9 @@ public class ContextServlet extends HttpServlet {
         if (profileId == null && sessionId == null && personaId == null) {
             ((HttpServletResponse) response).sendError(HttpServletResponse.SC_BAD_REQUEST, "Check logs for more details");
             logger.error("Couldn't find profileId, sessionId or personaId in incoming request! Stopped processing request. See debug level for more information");
-//            if (logger.isDebugEnabled()) {
+            if (logger.isDebugEnabled()) {
                 logger.error("Request dump: {}", HttpUtils.dumpRequestInfo(request));
-//            }
+            }
             return;
         }
 
