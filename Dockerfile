@@ -34,7 +34,7 @@ FROM weburnit/unomi:1.5.2
 #RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
 #COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 
-# COPY ./entrypoint.sh ./entrypoint.sh
+COPY ./entrypoint.sh ./entrypoint.sh
 
 EXPOSE 9443
 EXPOSE 8181
