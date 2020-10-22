@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM 146288359043.dkr.ecr.ap-southeast-1.amazonaws.com/unomi/primedata-dev:1.5
+FROM weburnit/unomi:1.5.2
 
 # Unomi environment variables
 # ENV UNOMI_HOME /opt/apache-unomi
@@ -27,12 +27,12 @@ FROM 146288359043.dkr.ecr.ap-southeast-1.amazonaws.com/unomi/primedata-dev:1.5
 # ENV ELASTICSEARCH_PORT 9300
 # RUN apt-get update -y
 # RUN apt-get install maven -y
-COPY . /apache-unomi
-RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
-WORKDIR $UNOMI_HOME
-RUN cp -r /apache-unomi/package/target/assembly/* $UNOMI_HOME
-RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
-COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+#COPY . /apache-unomi
+#RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
+#WORKDIR $UNOMI_HOME
+#RUN cp -r /apache-unomi/package/target/assembly/* $UNOMI_HOME
+#RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
+#COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 
 # COPY ./entrypoint.sh ./entrypoint.sh
 
