@@ -247,7 +247,7 @@
                             com.google.common.geometry;resolution:=optional,
                             com.google.errorprone.annotations.concurrent;resolution:=optional,
                             com.hazelcast.core;version="[3.11,4)";resolution:=optional,
-                            com.hazelcast.kubernetes;resolution:=optional,
+                            com.hazelcast.kubernetes.*;resolution:=optional,
                             com.lmax.disruptor;resolution:=optional,
                             com.lmax.disruptor.dsl;resolution:=optional,
                             com.sun.management;resolution:=optional,
