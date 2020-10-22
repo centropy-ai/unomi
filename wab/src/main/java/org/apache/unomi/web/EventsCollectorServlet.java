@@ -188,19 +188,23 @@ public class EventsCollectorServlet extends HttpServlet {
                 timestamp, eventsCollectorRequest.getSendAt(), privacyService, eventService);
         int changes = changesObject.getChangeType();
         profile = changesObject.getProfile();
+        logger.error("EventsCollectorServlet.ERROR: {}", changes);
 
         if ((changes & EventService.PROFILE_UPDATED) == EventService.PROFILE_UPDATED) {
             profileService.save(profile);
+            logger.error("can not save profile with changed: {}", changes);
         }
         if ((changes & EventService.SESSION_UPDATED) == EventService.SESSION_UPDATED) {
             if (session != null) {
+                logger.error("save session: {}", changes);
                 profileService.saveSession(session);
             }
         }
         if ((changes & EventService.ERROR) == EventService.ERROR) {
+            logger.error("EventService.ERROR: {}", changes);
             String errorMessage = "Error processing events. Total number of processed events: " + changesObject.getProcessedItems() + "/" + eventsCollectorRequest.getEvents().size();
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, errorMessage);
-            return;
+            logger.error(HttpServletResponse.SC_INTERNAL_SERVER_ERROR + errorMessage);
+//            return;
         }
 
         response.setContentType("application/json");
