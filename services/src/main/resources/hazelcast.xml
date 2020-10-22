@@ -57,7 +57,7 @@
 <!--            </aws>-->
             <kubernetes enabled="true">
                 <namespace>default</namespace>
-                <service-name>hazelcast</service-name>
+                <service-name>unomi</service-name>
             </kubernetes>
         </join>
         <interfaces enabled="false">
