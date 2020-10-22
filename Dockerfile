@@ -18,7 +18,7 @@
 FROM weburnit/unomi:1.5.2
 
 # Unomi environment variables
-# ENV UNOMI_HOME /opt/apache-unomi
+ENV UNOMI_HOME /apache-unomi
 # ENV PATH $PATH:$UNOMI_HOME/bin
 
 # ENV KARAF_OPTS "-Dunomi.autoStart=true"
