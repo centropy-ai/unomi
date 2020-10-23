@@ -211,7 +211,6 @@
             <groupId>com.hazelcast</groupId>
             <artifactId>hazelcast-all</artifactId>
             <version>3.11.7</version>
-            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.hazelcast</groupId>
@@ -252,6 +251,8 @@
                             com.lmax.disruptor;resolution:=optional,
                             com.lmax.disruptor.dsl;resolution:=optional,
                             com.sun.management;resolution:=optional,
+                            org.hibernate.*;resolution:=optional,
+                            org.springframework.*;resolution:=optional,
                             javax.cache;resolution:=optional,
                             javax.cache.*;resolution:=optional,
                             javax.activation;resolution:=optional,
