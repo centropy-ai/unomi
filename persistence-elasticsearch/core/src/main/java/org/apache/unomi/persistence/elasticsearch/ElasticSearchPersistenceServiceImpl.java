@@ -292,6 +292,8 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
     }
 
     public void setHazelcastInstance(HazelcastInstance hazelcastInstance) {
+        hazelcastInstance.getConfig().getNetworkConfig().getJoin().getKubernetesConfig().setEnabled(true).
+                setProperty("namespace", "default").setProperty("service-name", "unomi");
         this.hazelcastInstance = hazelcastInstance;
     }
 
