@@ -39,5 +39,6 @@ COPY ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
 EXPOSE 9443
 EXPOSE 8181
 EXPOSE 8102
+EXPOSE 5701
 
 CMD ["/bin/bash", "./entrypoint.sh"]
