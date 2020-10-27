@@ -1,0 +1,20 @@
+{
+  "metadata": {
+    "id": "assignSegmentAction",
+    "name": "assignSegmentAction",
+    "description": "Assign segment ID by rule engine",
+    "systemTags": [
+      "profileTags",
+      "event"
+    ],
+    "readOnly": true
+  },
+  "actionExecutor": "assignSegment",
+  "parameters": [
+    {
+      "id": "id",
+      "type": "string",
+      "multivalued": false
+    }
+  ]
+}

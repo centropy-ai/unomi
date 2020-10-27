@@ -144,7 +144,7 @@ public class EventsCollectorServlet extends HttpServlet {
             if (profile == null) {
                 // Create non persisted profile to create the session
                 String _profileID = foundProfileID;
-                if (_profileID.equals("")) {
+                if (_profileID == null || _profileID.equals("")) {
                     _profileID = "temp_" + Item.getKSUID();
                 }
                 profile = new Profile(_profileID);
