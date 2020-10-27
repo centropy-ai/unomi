@@ -18,31 +18,11 @@
 package org.apache.unomi.plugins.baseplugin.actions;
 
 import org.apache.unomi.api.Event;
-import org.apache.unomi.api.Profile;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
-import org.apache.unomi.persistence.spi.PropertyHelper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.TimeZone;
 
 public class AssignSegmentAction implements ActionExecutor {
-    private static final Logger logger = LoggerFactory.getLogger(AssignSegmentAction.class.getName());
-
-    private EventService eventService;
-
-    private boolean useEventToUpdateProfile = false;
-
-    public void setUseEventToUpdateProfile(boolean useEventToUpdateProfile) {
-        this.useEventToUpdateProfile = useEventToUpdateProfile;
-    }
 
     public int execute(Action action, Event event) {
         boolean storeInSession = Boolean.TRUE.equals(action.getParameterValues().get("storeInSession"));
@@ -57,9 +37,4 @@ public class AssignSegmentAction implements ActionExecutor {
         }
         return EventService.NO_CHANGE;
     }
-
-    public void setEventService(EventService eventService) {
-        this.eventService = eventService;
-    }
-
 }
