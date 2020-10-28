@@ -19,6 +19,7 @@ package org.apache.unomi.plugins.baseplugin.actions;
 
 import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Profile;
+import org.apache.unomi.api.Session;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
@@ -47,7 +48,10 @@ public class AssignSegmentAction implements ActionExecutor {
             p.setSegments(segments);
             logger.info("set profile segment" + segmentID);
             logger.info("profile segments" + p.getSegments().toString());
+            Session se = event.getSession();
+            se.setProfile(p);
             profileService.save(p);
+            profileService.saveSession(se);
             return EventService.PROFILE_UPDATED;
         }
         return EventService.NO_CHANGE;
