@@ -22,6 +22,7 @@ import org.apache.unomi.api.Profile;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
+import org.apache.unomi.api.services.ProfileService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +31,7 @@ import java.util.Set;
 
 public class AssignSegmentAction implements ActionExecutor {
     private static final Logger logger = LoggerFactory.getLogger(AssignSegmentAction.class.getName());
+    private ProfileService profileService;
 
     public int execute(Action action, Event event) {
         boolean storeInSession = Boolean.TRUE.equals(action.getParameterValues().get("storeInSession"));
@@ -45,8 +47,13 @@ public class AssignSegmentAction implements ActionExecutor {
             p.setSegments(segments);
             logger.info("set profile segment" + segmentID);
             logger.info("profile segments" + p.getSegments().toString());
+            profileService.save(p);
             return EventService.PROFILE_UPDATED;
         }
         return EventService.NO_CHANGE;
+    }
+
+    public void setProfileService(ProfileService profileService) {
+        this.profileService = profileService;
     }
 }
