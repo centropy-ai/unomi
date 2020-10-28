@@ -35,7 +35,7 @@ public class AssignSegmentAction implements ActionExecutor {
 
         String segmentID = (String) action.getParameterValues().get("id");
         if (!event.getProfile().getSegments().contains(segmentID)) {
-            Set<String> segments = new HashSet<String>(event.getProfile().getSegments());
+            Set<String> segments = event.getProfile().getSegments();
             segments.add(segmentID);
             event.getProfile().setSegments(segments);
             return EventService.PROFILE_UPDATED;

@@ -58,8 +58,8 @@ public class MergeProfilesOnPropertyAction implements ActionExecutor {
             return EventService.NO_CHANGE;
         }
 
-        final String mergeProfilePropertyValue = (String) action.getParameterValues().get("mergeProfilePropertyValue");
-        if (StringUtils.isEmpty(mergeProfilePropertyValue)) {
+        final Object mergeProfilePropertyValue =  action.getParameterValues().get("mergeProfilePropertyValue");
+        if (StringUtils.isEmpty(mergeProfilePropertyValue.toString())) {
             return EventService.NO_CHANGE;
         }
 

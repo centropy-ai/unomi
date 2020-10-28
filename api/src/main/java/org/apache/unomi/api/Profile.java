@@ -52,7 +52,7 @@ public class Profile extends Item {
 
     private Map<String, Object> systemProperties = new HashMap<>();
 
-    private Set<String> segments = new HashSet<>();
+    private Set<Stsegments = new HashSet<>();
 
     private Map<String, Integer> scores;
 
