@@ -75,6 +75,10 @@ public class MergeProfilesOnPropertyAction implements ActionExecutor {
         propertyCondition.setParameter("propertyName", "systemProperties." + mergeProfilePropertyName);
         propertyCondition.setParameter("propertyValue", mergeProfilePropertyValue);
 
+        logger.info("merge profile ,propertyName" + mergeProfilePropertyName);
+        logger.info("merge profile ,propertyValue" + mergeProfilePropertyValue);
+
+
         Condition excludeMergedProfilesCondition = new Condition(definitionsService.getConditionType("profilePropertyCondition"));
         excludeMergedProfilesCondition.setParameter("comparisonOperator", "missing");
         excludeMergedProfilesCondition.setParameter("propertyName", "mergedWith");
