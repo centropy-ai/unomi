@@ -22,6 +22,8 @@ import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
 
+import java.util.HashSet;
+
 public class AssignSegmentAction implements ActionExecutor {
 
     public int execute(Action action, Event event) {
@@ -32,7 +34,9 @@ public class AssignSegmentAction implements ActionExecutor {
 
         String segmentID = (String) action.getParameterValues().get("id");
         if (!event.getProfile().getSegments().contains(segmentID)) {
-            event.getProfile().getSegments().add(segmentID);
+            HashSet<String> segments = new HashSet<String>(event.getProfile().getSegments());
+            segments.add(segmentID);
+            event.getProfile().setSegments(segments);
             return EventService.PROFILE_UPDATED;
         }
         return EventService.NO_CHANGE;
