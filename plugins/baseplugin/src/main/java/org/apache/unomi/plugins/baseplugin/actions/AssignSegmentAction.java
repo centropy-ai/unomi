@@ -33,7 +33,6 @@ import java.util.Set;
 
 public class AssignSegmentAction implements ActionExecutor {
     private static final Logger logger = LoggerFactory.getLogger(AssignSegmentAction.class.getName());
-    private ProfileService profileService;
     private PersistenceService persistenceService;
 
     public int execute(Action action, Event event) {
@@ -48,21 +47,11 @@ public class AssignSegmentAction implements ActionExecutor {
             segments.add(segmentID);
             Profile p = event.getProfile();
             p.setSegments(segments);
-            logger.info("set profile segment" + segmentID);
-            logger.info("profile segments" + p.getSegments().toString());
-            Session se = event.getSession();
-            se.setProfile(p);
-            profileService.save(p);
-            profileService.saveSession(se);
             persistenceService.update(p.getItemId(), null, Profile.class, "segments", segments);
 
             return EventService.PROFILE_UPDATED;
         }
         return EventService.NO_CHANGE;
-    }
-
-    public void setProfileService(ProfileService profileService) {
-        this.profileService = profileService;
     }
 
     public void setPersistenceService(PersistenceService persistenceService) {
