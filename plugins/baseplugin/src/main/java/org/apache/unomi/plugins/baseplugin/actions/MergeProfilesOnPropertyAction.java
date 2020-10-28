@@ -91,9 +91,9 @@ public class MergeProfilesOnPropertyAction implements ActionExecutor {
                 // Take existing profile
                 profile = profiles.get(0);
             } else {
-                // Create a new profile
-                profile = new Profile(Item.getKSUID());
-                profile.setProperty("firstVisit", currentSession.getTimeStamp());
+//                // Create a new profile
+//                profile = new Profile(Item.getKSUID());
+//                profile.setProperty("firstVisit", currentSession.getTimeStamp());
                 profile.getSystemProperties().put(mergeProfilePropertyName, mergeProfilePropertyValue);
             }
 
