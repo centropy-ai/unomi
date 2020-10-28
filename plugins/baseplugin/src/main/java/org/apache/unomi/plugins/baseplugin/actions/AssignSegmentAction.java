@@ -21,11 +21,14 @@ import org.apache.unomi.api.Event;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.Set;
 
 public class AssignSegmentAction implements ActionExecutor {
+    private static final Logger logger = LoggerFactory.getLogger(AssignSegmentAction.class.getName());
 
     public int execute(Action action, Event event) {
         boolean storeInSession = Boolean.TRUE.equals(action.getParameterValues().get("storeInSession"));
@@ -38,6 +41,7 @@ public class AssignSegmentAction implements ActionExecutor {
             Set<String> segments = event.getProfile().getSegments();
             segments.add(segmentID);
             event.getProfile().setSegments(segments);
+            logger.info("set profile segment" + segmentID);
             return EventService.PROFILE_UPDATED;
         }
         return EventService.NO_CHANGE;
