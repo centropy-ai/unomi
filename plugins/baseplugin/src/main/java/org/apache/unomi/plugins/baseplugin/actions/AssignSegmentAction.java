@@ -45,9 +45,7 @@ public class AssignSegmentAction implements ActionExecutor {
         if (!event.getProfile().getSegments().contains(segmentID)) {
             Set<String> segments = event.getProfile().getSegments();
             segments.add(segmentID);
-            Profile p = event.getProfile();
-            p.setSegments(segments);
-            persistenceService.update(p.getItemId(), null, Profile.class, "segments", segments);
+            persistenceService.update(event.getProfile().getItemId(), null, Profile.class, "segments", segments);
 
             return EventService.PROFILE_UPDATED;
         }
