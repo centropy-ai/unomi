@@ -267,6 +267,8 @@
         <service-properties>
             <entry key="actionExecutorId" value="assignSegment"/>
         </service-properties>
-        <bean class="org.apache.unomi.plugins.baseplugin.actions.AssignSegmentAction"/>
+        <bean class="org.apache.unomi.plugins.baseplugin.actions.AssignSegmentAction">
+            <property name="profileService" ref="profileService"/>
+        </bean>
     </service>
 </blueprint>
