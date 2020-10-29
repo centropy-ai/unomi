@@ -49,9 +49,8 @@ public class AssignSegmentAction implements ActionExecutor {
             p.setSegments(segments);
             Session currentSession = event.getSession();
             currentSession.setProfile(p);
-
-//            persistenceService.update(event.getProfile().getItemId(), null, Profile.class, "segments", segments);
-//            persistenceService.update(event.getSession().getItemId(), null, Session.class, "profile.segments", segments);
+            event.setProfile(p);
+            logger.info("User {} has segments: {}", p.getItemId(), p.getSegments().toArray().toString());
 
             return EventService.PROFILE_UPDATED + EventService.SESSION_UPDATED;
         }
