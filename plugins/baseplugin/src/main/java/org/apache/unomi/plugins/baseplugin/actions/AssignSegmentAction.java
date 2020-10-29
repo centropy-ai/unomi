@@ -49,6 +49,7 @@ public class AssignSegmentAction implements ActionExecutor {
             p.setSegments(segments);
             Session currentSession = event.getSession();
             currentSession.setProfile(p);
+            event.setProfileId(p.getItemId());
             event.setProfile(p);
             logger.info("User {} has segments: {}", p.getItemId(), p.getSegments().toArray().toString());
 
