@@ -53,6 +53,7 @@ public class AssignSegmentAction implements ActionExecutor {
                 currentSession.setProfile(p);
                 event.setProfile(p);
                 persistenceService.save(p);
+                persistenceService.update(event.getProfile().getItemId(), null, Profile.class, "segments", segments);
             }
             logger.info("User {} has segments: {}", p.getItemId(), p.getSegments().toArray().toString());
 
