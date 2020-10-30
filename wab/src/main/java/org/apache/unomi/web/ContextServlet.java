@@ -270,15 +270,18 @@ public class ContextServlet extends HttpServlet {
         }
 
         if ((changes & EventService.PROFILE_UPDATED) == EventService.PROFILE_UPDATED) {
+            logger.debug("reach save profile");
             profileService.save(profile);
+            logger.debug("reach save profile completed");
             contextResponse.setProfileId(profile.getItemId());
         }
         if ((changes & EventService.SESSION_UPDATED) == EventService.SESSION_UPDATED && session != null) {
             profileService.saveSession(session);
             contextResponse.setSessionId(session.getItemId());
+            logger.debug("Reach send event");
             eventService.send(new Event("sessionUpdated", session, profile, scope, contextRequest.getEvents().get(0), session, timestamp));
         }
-
+        logger.debug("reach sent profile");
         if ((changes & EventService.ERROR) == EventService.ERROR) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
