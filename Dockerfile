@@ -28,7 +28,7 @@ ENV KARAF_OPTS "-Dunomi.autoStart=true"
 RUN apt-get update -y
 RUN apt-get install maven -y
 COPY . /apache-unomi
-RUN cd /apache-unomi d
+RUN cd /apache-unomi
 WORKDIR $UNOMI_HOME
 RUN cp -r /apache-unomi/package/target/assembly/* $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
