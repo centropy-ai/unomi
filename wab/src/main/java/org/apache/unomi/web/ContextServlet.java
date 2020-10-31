@@ -264,9 +264,13 @@ public class ContextServlet extends HttpServlet {
         }
 
         if (contextRequest != null) {
-            Changes changesObject = handleRequest(contextRequest, session, profile, contextResponse, request, response, timestamp);
-            changes |= changesObject.getChangeType();
-            profile = changesObject.getProfile();
+            try {
+                Changes changesObject = handleRequest(contextRequest, session, profile, contextResponse, request, response, timestamp);
+                changes |= changesObject.getChangeType();
+                profile = changesObject.getProfile();
+            } catch (Exception e) {
+                logger.debug("Handle request failed: {}", e.getMessage());
+            }
         }
 
         if ((changes & EventService.PROFILE_UPDATED) == EventService.PROFILE_UPDATED) {
