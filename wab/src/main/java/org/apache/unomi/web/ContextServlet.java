@@ -224,7 +224,7 @@ public class ContextServlet extends HttpServlet {
                     // Only save session and send event if a session id was provided, otherwise keep transient session
                     session = new Session(sessionId, sessionProfile, timestamp, contextRequest.getSendAt(), scope);
                     changes |= EventService.SESSION_UPDATED;
-                    Event event = new Event("sessionCreated", session, profile, scope, contextRequest.getEvents().get(0), session, timestamp);
+                    Event event = new Event("sessionCreated", session, profile, scope, null, session, timestamp);
                     if (sessionProfile.isAnonymousProfile()) {
                         // Do not keep track of profile in event
                         event.setProfileId(null);
@@ -235,7 +235,11 @@ public class ContextServlet extends HttpServlet {
                         logger.debug("Received event {} for profile={} session={} target={} timestamp={}",
                                 event.getEventType(), profile.getItemId(), session.getItemId(), event.getTarget(), timestamp);
                     }
-                    changes |= eventService.send(event);
+                    try {
+                        changes |= eventService.send(event);
+                    }   catch (Exception e){
+                        logger.debug("save session created event error: {}", e.getMessage());
+                    }
                 }
             }
 
@@ -264,21 +268,28 @@ public class ContextServlet extends HttpServlet {
         }
 
         if (contextRequest != null) {
-            Changes changesObject = handleRequest(contextRequest, session, profile, contextResponse, request, response, timestamp);
-            changes |= changesObject.getChangeType();
-            profile = changesObject.getProfile();
+            try {
+                Changes changesObject = handleRequest(contextRequest, session, profile, contextResponse, request, response, timestamp);
+                changes |= changesObject.getChangeType();
+                profile = changesObject.getProfile();
+            } catch (Exception e) {
+                logger.debug("Handle request failed: {}", e.getMessage());
+            }
         }
 
         if ((changes & EventService.PROFILE_UPDATED) == EventService.PROFILE_UPDATED) {
+            logger.debug("reach save profile");
             profileService.save(profile);
+            logger.debug("reach save profile completed");
             contextResponse.setProfileId(profile.getItemId());
         }
         if ((changes & EventService.SESSION_UPDATED) == EventService.SESSION_UPDATED && session != null) {
             profileService.saveSession(session);
             contextResponse.setSessionId(session.getItemId());
+            logger.debug("Reach send event");
             eventService.send(new Event("sessionUpdated", session, profile, scope, contextRequest.getEvents().get(0), session, timestamp));
         }
-
+        logger.debug("reach sent profile");
         if ((changes & EventService.ERROR) == EventService.ERROR) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
