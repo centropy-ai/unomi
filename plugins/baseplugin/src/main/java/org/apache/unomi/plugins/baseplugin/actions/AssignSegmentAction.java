@@ -42,20 +42,22 @@ public class AssignSegmentAction implements ActionExecutor {
         }
 
         String segmentID = (String) action.getParameterValues().get("id");
-        if (!event.getProfile().getSegments().contains(segmentID)) {
-            Set<String> segments = event.getProfile().getSegments();
+        Set<String> segments = event.getProfile().getSegments();
+        if (!event.getProfile().getSegments().contains(segmentID) && segmentID.length() > 0) {
             segments.add(segmentID);
             Profile p = event.getProfile();
-            synchronized (this) {
-                p = persistenceService.load(p.getItemId(), Profile.class);
-                p.setSegments(segments);
-                Session currentSession = event.getSession();
-                currentSession.setProfile(p);
-                event.setProfile(p);
-                persistenceService.save(p);
-                persistenceService.update(event.getProfile().getItemId(), null, Profile.class, "segments", segments);
+            if (segments.size() > 0) {
+                synchronized (this) {
+                    p = persistenceService.load(p.getItemId(), Profile.class);
+                    p.setSegments(segments);
+                    Session currentSession = event.getSession();
+                    currentSession.setProfile(p);
+                    event.setProfile(p);
+                    persistenceService.save(p);
+                    persistenceService.update(event.getProfile().getItemId(), null, Profile.class, "segments", segments);
+                }
+                logger.info("User {} has segments: {}", p.getItemId(), String.join(", ", p.getSegments()));
             }
-            logger.info("User {} has segments: {}", p.getItemId(), p.getSegments().toArray().toString());
         }
         return EventService.NO_CHANGE;
     }
