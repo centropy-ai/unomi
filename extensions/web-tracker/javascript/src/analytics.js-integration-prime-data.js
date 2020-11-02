@@ -82,7 +82,7 @@ Prime.prototype.initialize = function () {
         this.fillPageData(primePage, props);
     }
     window.digitalData.events = window.digitalData.events || [];
-    window.digitalData.events.push(this.buildEvent('view', this.buildPage(primePage), this.buildSource(location.href, 'page', context)))
+    window.digitalData.events.push(this.buildEvent('view', this.buildPage(primePage), this.buildSource(location.href, 'page')))
 
     this.extendSessionID()
     setTimeout(self.loadContext.bind(self), 0);
@@ -217,7 +217,7 @@ Prime.prototype.loadContext = function (skipEvents, invalidate) {
     var context = this.context();
     var jsonData = {
         requiredProfileProperties: ['j:nodename'],
-        source: this.buildPage(window.digitalData.page, 'page', context)
+        source: this.buildSource(location.pathname, 'page', context)
     };
     var now = new Date();
     jsonData.sendAt = now.toISOString();
