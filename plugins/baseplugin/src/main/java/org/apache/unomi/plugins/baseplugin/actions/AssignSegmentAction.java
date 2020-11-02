@@ -36,28 +36,14 @@ public class AssignSegmentAction implements ActionExecutor {
     private PersistenceService persistenceService;
 
     public int execute(Action action, Event event) {
-        boolean storeInSession = Boolean.TRUE.equals(action.getParameterValues().get("storeInSession"));
-        if (storeInSession && event.getSession() == null) {
-            return EventService.NO_CHANGE;
-        }
-
         String segmentID = (String) action.getParameterValues().get("id");
-        Set<String> segments = event.getProfile().getSegments();
         if (!event.getProfile().getSegments().contains(segmentID) && segmentID.length() > 0) {
-            segments.add(segmentID);
             Profile p = event.getProfile();
-            if (segments.size() > 0) {
-                synchronized (this) {
-                    p = persistenceService.load(p.getItemId(), Profile.class);
-                    p.setSegments(segments);
-                    Session currentSession = event.getSession();
-                    currentSession.setProfile(p);
-                    event.setProfile(p);
-                    persistenceService.save(p);
-                    persistenceService.update(event.getProfile().getItemId(), null, Profile.class, "segments", segments);
-                }
-                logger.info("User {} has segments: {}", p.getItemId(), String.join(", ", p.getSegments()));
+            synchronized (this) {
+                event.getProfile().getSegments().add(segmentID);
             }
+            logger.info("User {} has segments: {}", p.getItemId(), String.join(", ", p.getSegments()));
+            return EventService.PROFILE_UPDATED;
         }
         return EventService.NO_CHANGE;
     }

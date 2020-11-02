@@ -189,6 +189,7 @@ public class EventServiceImpl implements EventService {
         } else {
             changes = ERROR;
         }
+        logger.info("Profile changes: {} with profile.segments {}", changes, String.join(", ", event.getProfile().getSegments()));
         return changes;
     }
 
