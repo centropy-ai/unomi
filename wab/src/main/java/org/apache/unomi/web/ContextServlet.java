@@ -238,7 +238,7 @@ public class ContextServlet extends HttpServlet {
                     try {
                         changes |= eventService.send(event);
                     }   catch (Exception e){
-                        logger.debug("save session created event error: {}", e.getMessage());
+                        logger.error("save session created event error", e);
                     }
                 }
             }
@@ -255,7 +255,11 @@ public class ContextServlet extends HttpServlet {
                     logger.debug("Received event {} for profile={} {} target={} timestamp={}", profileUpdated.getEventType(), profile.getItemId(),
                             " session=" + (session != null ? session.getItemId() : null), profileUpdated.getTarget(), timestamp);
                 }
-                changes |= eventService.send(profileUpdated);
+                try {
+                    changes |= eventService.send(profileUpdated);
+                }   catch (Exception e){
+                    logger.error("save profile updated created error", e);
+                }
             }
         }
 
@@ -273,7 +277,7 @@ public class ContextServlet extends HttpServlet {
                 changes |= changesObject.getChangeType();
                 profile = changesObject.getProfile();
             } catch (Exception e) {
-                logger.debug("Handle request failed: {}", e.getMessage());
+                logger.error("Handle request failed", e);
             }
         }
 
@@ -344,7 +348,7 @@ public class ContextServlet extends HttpServlet {
     private Changes handleRequest(ContextRequest contextRequest, Session session, Profile profile, ContextResponse data,
                                   ServletRequest request, ServletResponse response, Date timestamp) {
         Changes changes = ServletCommon.handleEvents(contextRequest.getEvents(), session, profile, request, response,
-                timestamp, contextRequest.getSendAt(),
+                timestamp, contextRequest.getSendAt(), contextRequest.getSource(),
                 privacyService, eventService);
         data.setProcessedEvents(changes.getProcessedItems());
 

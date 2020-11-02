@@ -17,10 +17,7 @@
 
 package org.apache.unomi.web;
 
-import org.apache.unomi.api.Event;
-import org.apache.unomi.api.Persona;
-import org.apache.unomi.api.Profile;
-import org.apache.unomi.api.Session;
+import org.apache.unomi.api.*;
 import org.apache.unomi.api.services.EventService;
 import org.apache.unomi.api.services.PrivacyService;
 import org.slf4j.Logger;
@@ -55,7 +52,7 @@ public class ServletCommon {
     }
 
     public static Changes handleEvents(List<Event> events, Session session, Profile profile,
-                                    ServletRequest request, ServletResponse response, Date timestamp, Date sendAt,
+                                    ServletRequest request, ServletResponse response, Date timestamp, Date sendAt, Item source,
                                     PrivacyService privacyService, EventService eventService) {
         List<String> filteredEventTypes = privacyService.getFilteredEventTypes(profile);
 
@@ -69,7 +66,7 @@ public class ServletCommon {
             for (Event event : events) {
                 processedEventsCnt++;
                 if (event.getEventType() != null) {
-                    Event eventToSend = new Event(event.getEventType(), session, profile, event.getScope(), event.getSource(),
+                    Event eventToSend = new Event(event.getEventType(), session, profile, event.getScope(), event.getSource() == null ? source: event.getSource(),
                             event.getTarget(), event.getProperties(), event.getTimeStamp(), event.isPersistent(), sendAt);
                     if (!eventService.isEventAllowed(event, thirdPartyId)) {
                         logger.warn("Event is not allowed : {}", event.getEventType());

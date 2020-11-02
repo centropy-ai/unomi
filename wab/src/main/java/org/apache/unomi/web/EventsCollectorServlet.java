@@ -185,7 +185,7 @@ public class EventsCollectorServlet extends HttpServlet {
         }
 
         Changes changesObject = ServletCommon.handleEvents(eventsCollectorRequest.getEvents(), session, profile, request, response,
-                timestamp, eventsCollectorRequest.getSendAt(), privacyService, eventService);
+                timestamp, eventsCollectorRequest.getSendAt(), null, privacyService, eventService);
         int changes = changesObject.getChangeType();
         profile = changesObject.getProfile();
 
