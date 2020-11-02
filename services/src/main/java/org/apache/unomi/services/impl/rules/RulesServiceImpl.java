@@ -271,11 +271,13 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
             try {
                 for (Action action : rule.getActions()) {
                     changes |= actionExecutorDispatcher.execute(action, event);
+                    logger.info("Change by action {} with {}", action.getActionType().getItemId(), changes);
                 }
             }catch (Exception e) {
                 logger.error("RulesServiceImpl: error({}) on Rule({})", e.getMessage(), rule.getItemId());
                 continue;
             }
+            logger.info("Change total {}", changes);
             long totalActionsTime = System.currentTimeMillis() - actionsStartTime;
             Event ruleFired = new Event("ruleFired", event.getSession(), event.getProfile(), event.getScope(), event, rule, event.getTimeStamp());
             ruleFired.getAttributes().putAll(event.getAttributes());
