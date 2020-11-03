@@ -25,6 +25,8 @@ import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
 import org.apache.unomi.persistence.spi.PropertyHelper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Date;
 import java.util.Map;
@@ -32,6 +34,7 @@ import java.util.Map;
 public class SendEventAction implements ActionExecutor {
 
     private EventService eventService;
+    private static final Logger logger = LoggerFactory.getLogger(SendEventAction.class.getName());
 
     public void setEventService(EventService eventService) {
         this.eventService = eventService;
@@ -50,6 +53,11 @@ public class SendEventAction implements ActionExecutor {
         subEvent.setProfileId(event.getProfileId());
         subEvent.getAttributes().putAll(event.getAttributes());
 
-        return eventService.send(subEvent);
+        int changes = eventService.send(subEvent);
+        if ((changes & EventService.PROFILE_UPDATED) == EventService.PROFILE_UPDATED) {
+            logger.info("Change by event {} on subEvent {} with profile {}", event.getEventType(), subEvent.getEventType(), String.join(", ", subEvent.getProfile().getSegments()));
+            event.setProfile(subEvent.getProfile());
+        }
+        return changes;
     }
 }
