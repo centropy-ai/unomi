@@ -174,17 +174,6 @@ public class EventServiceImpl implements EventService {
                 for (ActionPostExecutor actionPostExecutor : event.getActionPostExecutors()) {
                     changes |= actionPostExecutor.execute() ? changes : NO_CHANGE;
                 }
-
-                if ((changes & PROFILE_UPDATED) == PROFILE_UPDATED) {
-                    Event profileUpdated = new Event("profileUpdated", session, event.getProfile(), event.getScope(), event.getSource(), event.getProfile(), event.getTimeStamp());
-                    profileUpdated.setPersistent(false);
-                    profileUpdated.getAttributes().putAll(event.getAttributes());
-                    changes |= send(profileUpdated, depth + 1);
-                    if (session != null && session.getProfileId() != null) {
-                        changes |= SESSION_UPDATED;
-                        session.setProfile(event.getProfile());
-                    }
-                }
             }
         } else {
             changes = ERROR;

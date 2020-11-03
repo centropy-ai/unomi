@@ -273,7 +273,6 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
                     changes |= actionExecutorDispatcher.execute(action, event);
                 }
             }catch (Exception e) {
-                logger.error("RulesServiceImpl: error({}) on Rule({})", e.getMessage(), rule.getItemId());
                 continue;
             }
             long totalActionsTime = System.currentTimeMillis() - actionsStartTime;

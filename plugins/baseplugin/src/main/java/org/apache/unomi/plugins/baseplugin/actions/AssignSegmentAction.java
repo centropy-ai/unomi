@@ -19,48 +19,25 @@ package org.apache.unomi.plugins.baseplugin.actions;
 
 import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Profile;
-import org.apache.unomi.api.Session;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
-import org.apache.unomi.api.services.ProfileService;
-import org.apache.unomi.persistence.spi.PersistenceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class AssignSegmentAction implements ActionExecutor {
     private static final Logger logger = LoggerFactory.getLogger(AssignSegmentAction.class.getName());
-    private PersistenceService persistenceService;
 
     public int execute(Action action, Event event) {
-        boolean storeInSession = Boolean.TRUE.equals(action.getParameterValues().get("storeInSession"));
-        if (storeInSession && event.getSession() == null) {
-            return EventService.NO_CHANGE;
-        }
-
         String segmentID = (String) action.getParameterValues().get("id");
-        if (!event.getProfile().getSegments().contains(segmentID)) {
-            Set<String> segments = event.getProfile().getSegments();
-            segments.add(segmentID);
+        if (!event.getProfile().getSegments().contains(segmentID) && segmentID.length() > 0) {
             Profile p = event.getProfile();
             synchronized (this) {
-                p = persistenceService.load(p.getItemId(), Profile.class);
-                p.setSegments(segments);
-                Session currentSession = event.getSession();
-                currentSession.setProfile(p);
-                event.setProfile(p);
-                persistenceService.save(p);
-                persistenceService.update(event.getProfile().getItemId(), null, Profile.class, "segments", segments);
+                event.getProfile().getSegments().add(segmentID);
             }
-            logger.info("User {} has segments: {}", p.getItemId(), p.getSegments().toArray().toString());
+            logger.debug("User {} has segments: {}", p.getItemId(), String.join(", ", p.getSegments()));
+            return EventService.PROFILE_UPDATED;
         }
         return EventService.NO_CHANGE;
-    }
-
-    public void setPersistenceService(PersistenceService persistenceService) {
-        this.persistenceService = persistenceService;
     }
 }
