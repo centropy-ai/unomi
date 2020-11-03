@@ -19,8 +19,6 @@ package org.apache.unomi.plugins.baseplugin.actions;
 
 import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Item;
-import org.apache.unomi.api.Profile;
-import org.apache.unomi.api.Session;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
@@ -28,7 +26,6 @@ import org.apache.unomi.persistence.spi.PropertyHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Date;
 import java.util.Map;
 
 public class SendEventAction implements ActionExecutor {
@@ -55,7 +52,6 @@ public class SendEventAction implements ActionExecutor {
 
         int changes = eventService.send(subEvent);
         if ((changes & EventService.PROFILE_UPDATED) == EventService.PROFILE_UPDATED) {
-            logger.info("Change by event {} on subEvent {} with profile {}", event.getEventType(), subEvent.getEventType(), String.join(", ", subEvent.getProfile().getSegments()));
             event.setProfile(subEvent.getProfile());
         }
         return changes;

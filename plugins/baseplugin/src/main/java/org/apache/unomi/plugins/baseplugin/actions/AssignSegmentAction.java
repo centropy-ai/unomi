@@ -19,21 +19,14 @@ package org.apache.unomi.plugins.baseplugin.actions;
 
 import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Profile;
-import org.apache.unomi.api.Session;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
-import org.apache.unomi.api.services.ProfileService;
-import org.apache.unomi.persistence.spi.PersistenceService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Set;
-
 public class AssignSegmentAction implements ActionExecutor {
     private static final Logger logger = LoggerFactory.getLogger(AssignSegmentAction.class.getName());
-    private PersistenceService persistenceService;
 
     public int execute(Action action, Event event) {
         String segmentID = (String) action.getParameterValues().get("id");
@@ -42,13 +35,9 @@ public class AssignSegmentAction implements ActionExecutor {
             synchronized (this) {
                 event.getProfile().getSegments().add(segmentID);
             }
-            logger.info("User {} has segments: {}", p.getItemId(), String.join(", ", p.getSegments()));
+            logger.debug("User {} has segments: {}", p.getItemId(), String.join(", ", p.getSegments()));
             return EventService.PROFILE_UPDATED;
         }
         return EventService.NO_CHANGE;
-    }
-
-    public void setPersistenceService(PersistenceService persistenceService) {
-        this.persistenceService = persistenceService;
     }
 }

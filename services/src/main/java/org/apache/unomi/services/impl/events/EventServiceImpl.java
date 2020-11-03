@@ -170,34 +170,14 @@ public class EventServiceImpl implements EventService {
                         changes |= eventListenerService.onEvent(event);
                     }
                 }
-                if (!event.getEventType().equals("ruleFired"))
-                    logger.info("Change before action executor all {}", changes);
                 // At the end of the processing event execute the post executor actions
                 for (ActionPostExecutor actionPostExecutor : event.getActionPostExecutors()) {
                     changes |= actionPostExecutor.execute() ? changes : NO_CHANGE;
-                    if (!event.getEventType().equals("ruleFired"))
-                        logger.info("Change by action executor after {}", changes);
                 }
-                if (!event.getEventType().equals("ruleFired"))
-                    logger.info("Change by action executor all {}", changes);
-                if ((changes & PROFILE_UPDATED) == PROFILE_UPDATED) {
-                    Event profileUpdated = new Event("profileUpdated", session, event.getProfile(), event.getScope(), event.getSource(), event.getProfile(), event.getTimeStamp());
-                    profileUpdated.setPersistent(false);
-                    profileUpdated.getAttributes().putAll(event.getAttributes());
-                    changes |= send(profileUpdated, depth + 1);
-                    if (session != null && session.getProfileId() != null) {
-                        changes |= SESSION_UPDATED;
-                        session.setProfile(event.getProfile());
-                    }
-                }
-                if (!event.getEventType().equals("ruleFired"))
-                    logger.info("Change after all {}", changes);
             }
         } else {
             changes = ERROR;
         }
-        if (!event.getEventType().equals("ruleFired"))
-            logger.info("Profile changes: {} with profile.segments {}", changes, String.join(", ", event.getProfile().getSegments()));
         return changes;
     }
 

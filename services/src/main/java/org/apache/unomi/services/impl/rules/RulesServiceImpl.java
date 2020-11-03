@@ -271,14 +271,10 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
             try {
                 for (Action action : rule.getActions()) {
                     changes |= actionExecutorDispatcher.execute(action, event);
-                    logger.info("Change by {} action {} with {} and profiles: {}", event.getEventType(), action.getActionType().getItemId(), changes, String.join(", ", event.getProfile().getSegments()));
                 }
             }catch (Exception e) {
-                logger.error("RulesServiceImpl: error({}) on Rule({})", e.getMessage(), rule.getItemId());
                 continue;
             }
-            if (!event.getEventType().equals("ruleFired"))
-                logger.info("Change by {} total {} on event {}", rule.getItemId(), changes, event.getEventType());
             long totalActionsTime = System.currentTimeMillis() - actionsStartTime;
             Event ruleFired = new Event("ruleFired", event.getSession(), event.getProfile(), event.getScope(), event, rule, event.getTimeStamp());
             ruleFired.getAttributes().putAll(event.getAttributes());
@@ -289,8 +285,6 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
             ruleStatistics.setLocalExecutionCount(ruleStatistics.getLocalExecutionCount()+1);
             ruleStatistics.setLocalActionsTime(ruleStatistics.getLocalActionsTime() + totalActionsTime);
             this.allRuleStatistics.put(rule.getItemId(), ruleStatistics);
-            if (!event.getEventType().equals("ruleFired"))
-                logger.info("Change by {} after ruleFired {}", rule.getItemId(), changes);
         }
         return changes;
     }
