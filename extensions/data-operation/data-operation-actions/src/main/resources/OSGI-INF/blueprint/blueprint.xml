@@ -19,7 +19,7 @@
 <blueprint xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
            xmlns:cm="http://aries.apache.org/blueprint/xmlns/blueprint-cm/v1.1.0"
            xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
-    <cm:property-placeholder persistent-id="org.apache.unomi.operation" update-strategy="reload">
+    <cm:property-placeholder persistent-id="org.apache.unomi.operation" update-strategy="reload" placeholder-prefix="${operation.">
         <cm:default-properties>
             <cm:property name="kafka.brokers" value="kafka:9093"/>
             <cm:property name="kafka.topic" value="eventify-event"/>
@@ -27,8 +27,13 @@
             <cm:property name="kafka.autoCommitEnable" value="true"/>
             <cm:property name="kafka.workerPoolMaxSize" value="1024"/>
             <cm:property name="kafka.workerPoolCoreSize" value="2"/>
-            <cm:property name="camel.component.kafka.worker-pool-max-size" value="2"/>
-            <cm:property name="redis.cluster" value="redis://redis-cluster:7000"/>
+            <cm:property name="kafka.camel.component.kafka.worker-pool-max-size" value="2"/>
+        </cm:default-properties>
+    </cm:property-placeholder>
+    <cm:property-placeholder persistent-id="org.apache.unomi.cluster"
+                             update-strategy="reload" placeholder-prefix="${cluster.">
+        <cm:default-properties>
+            <cm:property name="contextserver.nodeType" value="MASTER"/>
         </cm:default-properties>
     </cm:property-placeholder>
     <bean id="jacksonDataFormat" class="org.apache.camel.component.jackson.JacksonDataFormat">
@@ -36,33 +41,40 @@
     </bean>
     <!-- cfg configuration -->
     <!-- Action executor -->
+    <bean class="org.apache.unomi.operation.processor.KafkaEventInjectorListener" id="eventListener">
+        <property name="eventService" ref="eventService"/>
+        <property name="profileService" ref="profileService"/>
+    </bean>
+
+    <bean class="org.apache.unomi.operation.actions.BufferEventProcessingAction" id="validator">
+        <property name="context" ref="kafkaContext"/>
+    </bean>
+    <service id="kafkaContextBuilder" ref="kafkaContext">
+        <interfaces>
+            <value>org.osgi.framework.SynchronousBundleListener</value>
+        </interfaces>
+    </service>
     <bean id="kafkaContext" class="org.apache.unomi.operation.EventKafkaContext"
           init-method="initCamelContext" destroy-method="preDestroy">
         <property name="kafkaProps">
             <map>
-                <entry key="brokers" value="${kafka.brokers}"/>
-                <entry key="topic" value="${kafka.topic}"/>
-                <entry key="consumerCount" value="${kafka.consumerCount}"/>
-                <entry key="autoCommitEnable" value="${kafka.autoCommitEnable}"/>
-                <entry key="workerPoolMaxSize" value="${kafka.workerPoolMaxSize}"/>
-                <entry key="workerPoolCoreSize" value="${kafka.workerPoolCoreSize}"/>
-                <entry key="camel.component.kafka.worker-pool-max-size"
-                       value="${camel.component.kafka.worker-pool-max-size}"/>
+                <entry key="brokers" value="${operation.kafka.brokers}"/>
+                <entry key="topic" value="${operation.kafka.topic}"/>
+                <entry key="consumerCount" value="${operation.kafka.consumerCount}"/>
+                <entry key="autoCommitEnable" value="${operation.kafka.autoCommitEnable}"/>
+                <entry key="workerPoolMaxSize" value="${operation.kafka.workerPoolMaxSize}"/>
+                <entry key="workerPoolCoreSize" value="${operation.kafka.workerPoolCoreSize}"/>
+                <entry key="workerPoolMaxSize" value="${operation.kafka.camel.component.kafka.worker-pool-max-size}"/>
             </map>
         </property>
+        <property name="nodeType" value="${cluster.contextserver.nodeType}"/>
         <property name="bundleContext" ref="blueprintBundleContext"/>
         <property name="objectMapper" ref="jacksonDataFormat"/>
-<!--        <property name="segmentListener" ref="segmentListener"/>-->
-<!--        <property name="redisCluster" value="${redis.cluster}"/>-->
+        <property name="eventFromKafkaListener" ref="eventListener"/>
     </bean>
 
-<!--    <reference id="profileService" interface="org.apache.unomi.api.services.ProfileService"/>-->
-<!--    <bean class="org.apache.unomi.operation.segment.SegmentListener" id="segmentListener">-->
-<!--        <property name="profileService" ref="profileService"/>-->
-<!--    </bean>-->
-    <bean class="org.apache.unomi.operation.actions.BufferEventProcessingAction" id="validator">
-        <property name="context" ref="kafkaContext"/>
-    </bean>
+    <reference id="eventService" interface="org.apache.unomi.api.services.EventService"/>
+    <reference id="profileService" interface="org.apache.unomi.api.services.ProfileService"/>
     <service id="bufferEventProcessing" interface="org.apache.unomi.api.actions.ActionExecutor" ref="validator">
         <service-properties>
             <entry key="actionExecutorId" value="bufferEventProcessing"/>

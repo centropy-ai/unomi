@@ -55,7 +55,29 @@ services:
       - UNOMI_ROOT_PASSWORD=paulaan.me
       - KAFKA_BROKERS=kafka:9093
       - KAFKA_TOPIC=eventify-event
-      - REDIS_CLUSTER=redis://redis-cluster:7000,redis://redis-cluster:7001
+      - UNOMI_APACHE_NODE_TYPE=MASTER
+      - UNOMI_RULES_REFRESH_INTERVAL=60000
+    links:
+      - elasticsearch
+    depends_on:
+      - elasticsearch
+    networks:
+      - kong-net
+    ports:
+    - "8282:8181"
+  unomislaver:
+    build:
+      dockerfile: Local.Dockerfile
+      context: .
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - UNOMI_ELASTICSEARCH_ADDRESSES=elasticsearch:9200
+      - UNOMI_ROOT_PASSWORD=paulaan.me
+      - KAFKA_BROKERS=kafka:9093
+      - KAFKA_TOPIC=eventify-event
+      - UNOMI_APACHE_NODE_TYPE=SLAVER
+      - UNOMI_RULES_REFRESH_INTERVAL=60000
     links:
       - elasticsearch
     depends_on:
@@ -63,8 +85,6 @@ services:
     networks:
       - kong-net
 
-    ports:
-    - "8282:8181"
   redis-cluster:
     environment:
       IP: ${REDIS_CLUSTER_IP}

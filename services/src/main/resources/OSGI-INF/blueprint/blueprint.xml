@@ -47,6 +47,7 @@
             <cm:property name="contextserver.publicAddress" value="https://localhost:9443"/>
             <cm:property name="contextserver.internalAddress" value="http://127.0.0.1:8181"/>
             <cm:property name="nodeStatisticsUpdateFrequency" value="10000"/>
+            <cm:property name="contextserver.nodeType" value="MASTER"/>
         </cm:default-properties>
     </cm:property-placeholder>
 
@@ -151,6 +152,7 @@
         <property name="schedulerService" ref="schedulerServiceImpl"/>
         <property name="rulesRefreshInterval" value="${services.rules.refresh.interval}"/>
         <property name="rulesStatisticsRefreshInterval" value="${services.rules.statistics.refresh.interval}"/>
+        <property name="nodeType" value="${cluster.contextserver.nodeType}"/>
     </bean>
     <service id="rulesService" ref="rulesServiceImpl">
         <interfaces>

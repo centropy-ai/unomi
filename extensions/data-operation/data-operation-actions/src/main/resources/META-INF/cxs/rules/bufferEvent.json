@@ -16,14 +16,6 @@
             "propertyValue": "systemscope",
             "comparisonOperator": "notEquals"
           }
-        },
-        {
-          "type": "eventPropertyCondition",
-          "parameterValues": {
-            "propertyName": "eventType",
-            "propertyValue": "ruleFired",
-            "comparisonOperator": "notEquals"
-          }
         }
       ],
       "operator": "and"

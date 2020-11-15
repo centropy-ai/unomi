@@ -35,6 +35,12 @@
             <version>${project.version}</version>
             <scope>provided</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.unomi</groupId>
+            <artifactId>unomi-persistence-spi</artifactId>
+            <version>${project.version}</version>
+            <scope>provided</scope>
+        </dependency>
 <!--        <dependency>-->
 <!--            <groupId>org.apache.unomi</groupId>-->
 <!--            <artifactId>unomi-services</artifactId>-->
@@ -117,6 +123,16 @@
             <scope>provided</scope>
         </dependency>
         <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-all</artifactId>
+            <version>3.12.10</version>
+        </dependency>
+        <dependency>
+            <groupId>com.hazelcast</groupId>
+            <artifactId>hazelcast-kubernetes</artifactId>
+            <version>1.5.1</version>
+        </dependency>
+        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
             <scope>provided</scope>
@@ -140,6 +156,13 @@
                         <Import-Package>
                             sun.misc;resolution:=optional,
                             org.osgi.service.event*;resolution:=optional,
+                            com.hazelcast.core;version="[3.11.0,4)";resolution:=optional,
+                            com.hazelcast.client;resolution:=optional,
+                            com.hazelcast.kubernetes.*;version="[1.3.1,1.5)";resolution:=optional,
+                            org.hibernate.*;resolution:=optional,
+                            org.springframework.*;resolution:=optional,
+                            javax.cache;resolution:=optional,
+                            javax.cache.*;resolution:=optional
                             org.apache.camel,
                             org.apache.camel.builder,
                             org.apache.camel.component.file.remote,

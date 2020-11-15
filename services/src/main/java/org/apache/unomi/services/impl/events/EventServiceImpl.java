@@ -171,8 +171,10 @@ public class EventServiceImpl implements EventService {
                     }
                 }
                 // At the end of the processing event execute the post executor actions
-                for (ActionPostExecutor actionPostExecutor : event.getActionPostExecutors()) {
-                    changes |= actionPostExecutor.execute() ? changes : NO_CHANGE;
+                if (event.getActionPostExecutors() != null) {
+                    for (ActionPostExecutor actionPostExecutor : event.getActionPostExecutors()) {
+                        changes |= actionPostExecutor.execute() ? changes : NO_CHANGE;
+                    }
                 }
             }
         } else {
