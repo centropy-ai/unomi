@@ -19,6 +19,7 @@ package org.apache.unomi.plugins.baseplugin.actions;
 
 import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Item;
+import org.apache.unomi.api.Metadata;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
@@ -46,7 +47,7 @@ public class SendEventAction implements ActionExecutor {
         @SuppressWarnings("unchecked")
         Map<String, Object> eventProperties = (Map<String, Object>) action.getParameterValues().get("eventProperties");
         Item target = (Item) action.getParameterValues().get("eventTarget");
-        Event subEvent = new Event(eventType, event.getSession(), event.getProfile(), event.getScope(), event, target, eventProperties, event.getTimeStamp(), persistenceValue);
+        Event subEvent = new Event(eventType, event.getSession(), event.getProfile(), Metadata.SYSTEM_SCOPE, event, target, eventProperties, event.getTimeStamp(), persistenceValue);
         subEvent.setProfileId(event.getProfileId());
         subEvent.getAttributes().putAll(event.getAttributes());
 

@@ -1,12 +1,12 @@
 {
   "metadata": {
-    "id": "bufferEvent",
-    "name": "bufferEvent Event to Kafka",
+    "id": "bufferSystemEvent",
+    "name": "bufferSystemEvent Event to Kafka",
     "description": "bufferEvent Event to Kafka",
     "readOnly": false,
     "scope": "systemscope",
     "tags": [
-      "master"
+      "metarouter_segment"
     ]
   },
   "condition": {
@@ -14,7 +14,7 @@
     "parameterValues": {
       "propertyName": "scope",
       "propertyValue": "systemscope",
-      "comparisonOperator": "notEquals"
+      "comparisonOperator": "equals"
     }
   },
   "actions": [

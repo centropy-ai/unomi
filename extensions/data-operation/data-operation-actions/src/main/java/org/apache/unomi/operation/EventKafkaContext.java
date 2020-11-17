@@ -33,6 +33,8 @@ public class EventKafkaContext implements SynchronousBundleListener {
 
     private KafkaEventInjectorListener eventFromKafkaListener;
     private boolean initialized = false;
+    String producerTopics = "";
+    String consumerTopics = "";
 
     public void initCamelContext() throws Exception {
         camelContext = new OsgiDefaultCamelContext(bundleContext);
@@ -52,43 +54,54 @@ public class EventKafkaContext implements SynchronousBundleListener {
     public void bundleChanged(BundleEvent bundleEvent) {
         if (bundleEvent.getType() == BundleEvent.STARTED && !this.initialized) {
             this.initialized = true;
-            StringBuilder uriBuilder = new StringBuilder("kafka:");
             StringBuilder kafkaOptions = new StringBuilder();
             KafkaConfiguration kafkaConfiguration = new KafkaConfiguration();
             for (Map.Entry<String, String> entry : kafkaProps.entrySet()) {
-                if (entry.getKey().equals("topic")) {
+                if (entry.getKey().equals("producerTopics")) {
+                    producerTopics = entry.getValue();
+                    continue;
+                }
+                if (entry.getKey().equals("consumerTopics")) {
+                    consumerTopics = entry.getValue();
                     kafkaConfiguration.setTopic(entry.getValue());
-                    uriBuilder.append(entry.getValue());
                     continue;
                 }
                 if (entry.getKey().equals("brokers")) {
                     kafkaConfiguration.setBrokers(entry.getValue());
+                    continue;
                 }
-                kafkaOptions.append(entry.getKey()).append("=").append(entry.getValue());
+                if (entry.getValue().length() > 0) {
+                    kafkaOptions.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
+                }
             }
-            uriBuilder.append("?").append(kafkaOptions.toString());
+            kafkaOptions.append("enableIdempotence=true");
+
             try {
                 camelContext.addRoutes(new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
-                        KafkaComponent kafka = new KafkaComponent(this.getContext());
-                        kafka.setBrokers(uriBuilder.toString());
-                        kafka.setConfiguration(kafkaConfiguration);
+                        StringBuilder producerURIBuilder = new StringBuilder("kafka:" + producerTopics);
 
-                        KafkaEndpoint endpoint = new KafkaEndpoint(uriBuilder.toString(), kafka);
+                        kafkaConfiguration.setTopic(producerTopics);
+                        producerURIBuilder.append("?").append(kafkaOptions.toString());
+                        KafkaComponent kafka = new KafkaComponent(this.getContext());
+                        kafka.setConfiguration(kafkaConfiguration);
+                        KafkaEndpoint endpoint = new KafkaEndpoint(producerURIBuilder.toString(), kafka);
                         endpoint.setConfiguration(kafkaConfiguration);
-                        this.from("direct:kafkaRoute").marshal(objectMapper).to(endpoint);
+                        this.from("direct:kafkaRoute").marshal(objectMapper).to(endpoint).log("Send to DataOperation: ${body}");
                     }
                 });
-                logger.info("Node Type {}", nodeType);
                 if (!nodeType.toUpperCase().equals("MASTER")) {
                     camelContext.addRoutes(new RouteBuilder() {
                         @Override
                         public void configure() throws Exception {
+                            StringBuilder consumerURIBuilder = new StringBuilder("kafka:" + consumerTopics);
+
+                            kafkaConfiguration.setTopic(consumerTopics);
+                            consumerURIBuilder.append("?").append(kafkaOptions.toString());
                             KafkaComponent kafka = new KafkaComponent(this.getContext());
-                            kafka.setBrokers(uriBuilder.toString());
                             kafka.setConfiguration(kafkaConfiguration);
-                            KafkaEndpoint endpoint = new KafkaEndpoint(uriBuilder.toString(), kafka);
+                            KafkaEndpoint endpoint = new KafkaEndpoint(consumerURIBuilder.toString(), kafka);
                             endpoint.setConfiguration(kafkaConfiguration);
                             this.from(endpoint).unmarshal(objectMapper)
                                     .process(eventFromKafkaListener)
@@ -97,7 +110,6 @@ public class EventKafkaContext implements SynchronousBundleListener {
                     });
                 }
                 camelContext.start();
-                logger.info("KAFKA start context");
             } catch (Exception e) {
                 logger.error("KAFKA error", e);
                 e.printStackTrace();

@@ -22,8 +22,10 @@
     <cm:property-placeholder persistent-id="org.apache.unomi.operation" update-strategy="reload" placeholder-prefix="${operation.">
         <cm:default-properties>
             <cm:property name="kafka.brokers" value="kafka:9093"/>
-            <cm:property name="kafka.topic" value="eventify-event"/>
-            <cm:property name="kafka.consumerCount" value="10"/>
+            <cm:property name="kafka.consumerTopics" value="eventify-event"/>
+            <cm:property name="kafka.producerTopics" value="eventify-event"/>
+            <cm:property name="kafka.groupId" value=""/>
+            <cm:property name="kafka.consumersCount" value="2"/>
             <cm:property name="kafka.autoCommitEnable" value="true"/>
             <cm:property name="kafka.workerPoolMaxSize" value="1024"/>
             <cm:property name="kafka.workerPoolCoreSize" value="2"/>
@@ -59,8 +61,10 @@
         <property name="kafkaProps">
             <map>
                 <entry key="brokers" value="${operation.kafka.brokers}"/>
-                <entry key="topic" value="${operation.kafka.topic}"/>
-                <entry key="consumerCount" value="${operation.kafka.consumerCount}"/>
+                <entry key="producerTopics" value="${operation.kafka.producerTopics}"/>
+                <entry key="consumerTopics" value="${operation.kafka.consumerTopics}"/>
+                <entry key="groupId" value="${operation.kafka.groupId}"/>
+                <entry key="consumersCount" value="${operation.kafka.consumersCount}"/>
                 <entry key="autoCommitEnable" value="${operation.kafka.autoCommitEnable}"/>
                 <entry key="workerPoolMaxSize" value="${operation.kafka.workerPoolMaxSize}"/>
                 <entry key="workerPoolCoreSize" value="${operation.kafka.workerPoolCoreSize}"/>

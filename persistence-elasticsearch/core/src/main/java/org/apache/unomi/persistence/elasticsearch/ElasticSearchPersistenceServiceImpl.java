@@ -1298,6 +1298,7 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
             String itemType = Item.getItemType(clazz);
             Map<String, Object> context = new HashMap<>();
             context.put("event", item);
+            logger.info("write event {}(id {}) to context", item.getItemType(), item.getItemId());
             QueryBuilder builder = QueryBuilders.boolQuery()
                     .must(QueryBuilders.idsQuery().addIds(item.getItemId()))
                     .must(conditionESQueryBuilderDispatcher.buildFilter(query, context));

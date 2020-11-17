@@ -186,6 +186,10 @@ public class PastEventConditionESQueryBuilder implements ConditionESQueryBuilder
         andCondition.setParameter("operator", "and");
         andCondition.setParameter("subConditions", l);
 
+        Event event = (Event) context.get("event");
+        if (event != null) {
+            logger.info("Past Event {} at {}", event.getEventType(), event.getTimeStamp().toString());
+        }
         l.add(ConditionContextHelper.getContextualCondition(eventCondition, context, scriptExecutor));
 
         Integer numberOfDays = (Integer) condition.getParameter("numberOfDays");
