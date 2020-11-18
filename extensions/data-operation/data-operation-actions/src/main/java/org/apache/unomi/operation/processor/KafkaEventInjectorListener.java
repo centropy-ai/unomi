@@ -20,6 +20,9 @@ public class KafkaEventInjectorListener implements ConsumeEventProcessor, Proces
     @Override
     public void process(Event e) {
         if (e != null) {
+            if (logger.isDebugEnabled()) {
+                logger.debug("Received event {}", e.getEventType());
+            }
             Profile profile = profileService.load(e.getProfileId());
             Session session = profileService.loadSession(e.getSessionId(), e.getTimeStamp());
             e.setProfile(profile);

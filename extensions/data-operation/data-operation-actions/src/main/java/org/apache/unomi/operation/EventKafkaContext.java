@@ -70,6 +70,10 @@ public class EventKafkaContext implements SynchronousBundleListener {
                     kafkaConfiguration.setBrokers(entry.getValue());
                     continue;
                 }
+                if (entry.getKey().equals("groupId") && entry.getValue().length() > 0) {
+                    kafkaConfiguration.setGroupId(entry.getValue());
+                    continue;
+                }
                 if (entry.getValue().length() > 0) {
                     kafkaOptions.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
                 }
@@ -88,7 +92,7 @@ public class EventKafkaContext implements SynchronousBundleListener {
                         kafka.setConfiguration(kafkaConfiguration);
                         KafkaEndpoint endpoint = new KafkaEndpoint(producerURIBuilder.toString(), kafka);
                         endpoint.setConfiguration(kafkaConfiguration);
-                        this.from("direct:kafkaRoute").marshal(objectMapper).to(endpoint).log("Send to DataOperation: ${body}");
+                        this.from("direct:kafkaRoute").marshal(objectMapper).to(endpoint).log("Send to Kafka: ${body}");
                     }
                 });
                 if (!nodeType.toUpperCase().equals("MASTER")) {
