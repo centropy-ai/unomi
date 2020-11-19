@@ -2,6 +2,7 @@ package org.apache.unomi.operation;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
@@ -44,6 +45,8 @@ public class EventKafkaContext implements SynchronousBundleListener {
     public void preDestroy() throws Exception {
         bundleContext.removeBundleListener(this);
         this.camelContext.stop();
+        this.initialized = false;
+        logger.info("Destroy EventKafkaBundle");
     }
 
     public void setBundleContext(BundleContext bundleContext) {
@@ -52,7 +55,7 @@ public class EventKafkaContext implements SynchronousBundleListener {
 
     @Override
     public void bundleChanged(BundleEvent bundleEvent) {
-        if (bundleEvent.getType() == BundleEvent.STARTED && !this.initialized) {
+        if (!this.initialized) {
             this.initialized = true;
             StringBuilder kafkaOptions = new StringBuilder();
             KafkaConfiguration kafkaConfiguration = new KafkaConfiguration();
@@ -114,6 +117,7 @@ public class EventKafkaContext implements SynchronousBundleListener {
                     });
                 }
                 camelContext.start();
+                logger.info("KAFKA started");
             } catch (Exception e) {
                 logger.error("KAFKA error", e);
                 e.printStackTrace();
@@ -134,6 +138,7 @@ public class EventKafkaContext implements SynchronousBundleListener {
         this.objectMapper = objectMapper;
         ObjectMapper mapper = CustomObjectMapper.getObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        objectMapper.setEnableFeatures(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS.name());
         this.objectMapper.setObjectMapper(mapper);
     }
 
