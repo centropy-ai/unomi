@@ -46,6 +46,7 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
 
     public static final String RULE_QUERY_PREFIX = "rule_";
     private static final Logger logger = LoggerFactory.getLogger(RulesServiceImpl.class.getName());
+    public static final String NODE_TYPE = "MASTER";
 
     private BundleContext bundleContext;
 
@@ -58,6 +59,7 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
     private ActionExecutorDispatcher actionExecutorDispatcher;
     private List<Rule> allRules;
 
+    private Set<String> systemRuleTags;
     private Map<String, RuleStatistics> allRuleStatistics = new ConcurrentHashMap<>();
 
     private Integer rulesRefreshInterval = 1000;
@@ -174,7 +176,6 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
             String scope = rule.getMetadata().getScope();
             if (scope.equals(Metadata.SYSTEM_SCOPE) || scope.equals(event.getScope())) {
                 Condition eventCondition = definitionsService.extractConditionBySystemTag(rule.getCondition(), "eventCondition");
-                logger.debug("Rule {} has {} for event {} - {}", rule.getItemId(), "eventCondition", event.getEventType(), eventCondition);
 
                 if (eventCondition == null) {
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
@@ -187,7 +188,6 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }
-                logger.debug("Rule {} pass {} for event {}", rule.getItemId(), "eventCondition", event.getEventType());
 
                 Condition sourceCondition = definitionsService.extractConditionBySystemTag(rule.getCondition(), "sourceEventCondition");
                 if (sourceCondition != null && !persistenceService.testMatch(sourceCondition, event.getSource())) {
@@ -222,14 +222,12 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }
-                logger.debug("Rule {} pass {} for event {}", rule.getItemId(), "profileCondition", event.getEventType());
 
                 Condition sessionCondition = definitionsService.extractConditionBySystemTag(rule.getCondition(), "sessionCondition");
                 if (sessionCondition != null && !persistenceService.testMatch(sessionCondition, event.getSession())) {
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }
-                logger.debug("Rule {} pass {} for event {}", rule.getItemId(), "sessionCondition", event.getEventType());
 
                 matchedRules.add(rule);
             }
@@ -256,15 +254,27 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
         List<Rule> allItems = persistenceService.getAllItems(Rule.class, 0, -1, "priority").getList();
         List<Rule> results = new ArrayList<>();
         for (Rule rule : allItems) {
-            Set<String> tags = rule.getMetadata().getTags();
-            boolean isSystemRule = (tags.contains("metarouter_segment") || tags.contains("metarouter_goal") || tags.contains("metarouter_trigger"));
-            if ((nodeType.toUpperCase().equals("MASTER") && !isSystemRule) || (!nodeType.toUpperCase().equals("MASTER") && isSystemRule) || tags.contains("global")) {
+            Set<String> tags = rule.getMetadata().getSystemTags();
+            boolean isSystemRule = isSystemRule(tags);
+            if ((nodeType.toUpperCase().equals(NODE_TYPE) && !isSystemRule) || (!nodeType.toUpperCase().equals(NODE_TYPE) && isSystemRule) || tags.contains("global")) {
                 ParserHelper.resolveConditionType(definitionsService, rule.getCondition());
                 ParserHelper.resolveActionTypes(definitionsService, rule.getActions());
                 results.add(rule);
             }
         }
         return results;
+    }
+
+    private boolean isSystemRule(Set<String> tags) {
+        if (tags == null) {
+            return false;
+        }
+        for (String entry: systemRuleTags) {
+            if (tags.contains(entry)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -530,5 +540,9 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
 
     public void setNodeType(String nodeType) {
         this.nodeType = nodeType;
+    }
+
+    public void setSystemRuleTags(Set<String> systemRuleTags) {
+        this.systemRuleTags = systemRuleTags;
     }
 }

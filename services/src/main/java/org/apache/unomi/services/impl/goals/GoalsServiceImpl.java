@@ -137,7 +137,10 @@ public class GoalsServiceImpl implements GoalsService, SynchronousBundleListener
     }
 
     private void createRule(Goal goal, Condition event, String id, boolean testStart) {
-        Rule rule = new Rule(new Metadata(goal.getMetadata().getScope(), goal.getMetadata().getId() + id + "Event", "Auto generated rule for goal " + goal.getMetadata().getName(), ""));
+        Metadata metadata = new Metadata(goal.getMetadata().getScope(), goal.getMetadata().getId() + id + "Event", "Auto generated rule for goal " + goal.getMetadata().getName(), "");
+        metadata.setTags(goal.getMetadata().getTags());
+        metadata.setSystemTags(goal.getMetadata().getSystemTags());
+        Rule rule = new Rule(metadata);
         Condition res = new Condition();
         List<Condition> subConditions = new ArrayList<Condition>();
         res.setConditionType(definitionsService.getConditionType("booleanCondition"));

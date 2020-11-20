@@ -5,7 +5,7 @@
     "description": "bufferEvent Event to Kafka",
     "readOnly": false,
     "scope": "systemscope",
-    "tags": [
+    "systemTags": [
       "metarouter_segment"
     ]
   },

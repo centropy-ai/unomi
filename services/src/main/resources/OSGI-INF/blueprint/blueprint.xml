@@ -153,6 +153,13 @@
         <property name="rulesRefreshInterval" value="${services.rules.refresh.interval}"/>
         <property name="rulesStatisticsRefreshInterval" value="${services.rules.statistics.refresh.interval}"/>
         <property name="nodeType" value="${cluster.contextserver.nodeType}"/>
+        <property name="systemRuleTags">
+            <set>
+                <value>metarouter_segment</value>
+                <value>metarouter_goal</value>
+                <value>metarouter_trigger</value>
+            </set>
+        </property>
     </bean>
     <service id="rulesService" ref="rulesServiceImpl">
         <interfaces>
