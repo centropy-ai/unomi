@@ -40,6 +40,72 @@ public class EventKafkaContext implements SynchronousBundleListener {
     public void initCamelContext() throws Exception {
         camelContext = new OsgiDefaultCamelContext(bundleContext);
         bundleContext.addBundleListener(this);
+
+        StringBuilder kafkaOptions = new StringBuilder();
+        KafkaConfiguration kafkaConfiguration = new KafkaConfiguration();
+        for (Map.Entry<String, String> entry : kafkaProps.entrySet()) {
+            if (entry.getKey().equals("producerTopics")) {
+                producerTopics = entry.getValue();
+                continue;
+            }
+            if (entry.getKey().equals("consumerTopics")) {
+                consumerTopics = entry.getValue();
+                kafkaConfiguration.setTopic(entry.getValue());
+                continue;
+            }
+            if (entry.getKey().equals("brokers")) {
+                kafkaConfiguration.setBrokers(entry.getValue());
+                continue;
+            }
+            if (entry.getKey().equals("groupId") && entry.getValue().length() > 0) {
+                kafkaConfiguration.setGroupId(entry.getValue());
+                continue;
+            }
+            if (entry.getValue().length() > 0) {
+                kafkaOptions.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
+            }
+        }
+        kafkaOptions.append("enableIdempotence=true");
+
+        try {
+            camelContext.addRoutes(new RouteBuilder() {
+                @Override
+                public void configure() throws Exception {
+                    StringBuilder producerURIBuilder = new StringBuilder("kafka:" + producerTopics);
+
+                    kafkaConfiguration.setTopic(producerTopics);
+                    producerURIBuilder.append("?").append(kafkaOptions.toString());
+                    KafkaComponent kafka = new KafkaComponent(this.getContext());
+                    kafka.setConfiguration(kafkaConfiguration);
+                    KafkaEndpoint endpoint = new KafkaEndpoint(producerURIBuilder.toString(), kafka);
+                    endpoint.setConfiguration(kafkaConfiguration);
+                    this.from("direct:kafkaRoute").marshal(objectMapper).to(endpoint).log("Send to Kafka: ${body}");
+                }
+            });
+            if (!nodeType.toUpperCase().equals("MASTER")) {
+                camelContext.addRoutes(new RouteBuilder() {
+                    @Override
+                    public void configure() throws Exception {
+                        StringBuilder consumerURIBuilder = new StringBuilder("kafka:" + consumerTopics);
+
+                        kafkaConfiguration.setTopic(consumerTopics);
+                        consumerURIBuilder.append("?").append(kafkaOptions.toString());
+                        KafkaComponent kafka = new KafkaComponent(this.getContext());
+                        kafka.setConfiguration(kafkaConfiguration);
+                        KafkaEndpoint endpoint = new KafkaEndpoint(consumerURIBuilder.toString(), kafka);
+                        endpoint.setConfiguration(kafkaConfiguration);
+                        this.from(endpoint).unmarshal(objectMapper)
+                                .process(eventFromKafkaListener)
+                        ;
+                    }
+                });
+            }
+            camelContext.start();
+            logger.info("KAFKA started");
+        } catch (Exception e) {
+            logger.error("KAFKA error", e);
+            e.printStackTrace();
+        }
     }
 
     public void preDestroy() throws Exception {
@@ -57,71 +123,6 @@ public class EventKafkaContext implements SynchronousBundleListener {
     public void bundleChanged(BundleEvent bundleEvent) {
         if (!this.initialized) {
             this.initialized = true;
-            StringBuilder kafkaOptions = new StringBuilder();
-            KafkaConfiguration kafkaConfiguration = new KafkaConfiguration();
-            for (Map.Entry<String, String> entry : kafkaProps.entrySet()) {
-                if (entry.getKey().equals("producerTopics")) {
-                    producerTopics = entry.getValue();
-                    continue;
-                }
-                if (entry.getKey().equals("consumerTopics")) {
-                    consumerTopics = entry.getValue();
-                    kafkaConfiguration.setTopic(entry.getValue());
-                    continue;
-                }
-                if (entry.getKey().equals("brokers")) {
-                    kafkaConfiguration.setBrokers(entry.getValue());
-                    continue;
-                }
-                if (entry.getKey().equals("groupId") && entry.getValue().length() > 0) {
-                    kafkaConfiguration.setGroupId(entry.getValue());
-                    continue;
-                }
-                if (entry.getValue().length() > 0) {
-                    kafkaOptions.append(entry.getKey()).append("=").append(entry.getValue()).append("&");
-                }
-            }
-            kafkaOptions.append("enableIdempotence=true");
-
-            try {
-                camelContext.addRoutes(new RouteBuilder() {
-                    @Override
-                    public void configure() throws Exception {
-                        StringBuilder producerURIBuilder = new StringBuilder("kafka:" + producerTopics);
-
-                        kafkaConfiguration.setTopic(producerTopics);
-                        producerURIBuilder.append("?").append(kafkaOptions.toString());
-                        KafkaComponent kafka = new KafkaComponent(this.getContext());
-                        kafka.setConfiguration(kafkaConfiguration);
-                        KafkaEndpoint endpoint = new KafkaEndpoint(producerURIBuilder.toString(), kafka);
-                        endpoint.setConfiguration(kafkaConfiguration);
-                        this.from("direct:kafkaRoute").marshal(objectMapper).to(endpoint).log("Send to Kafka: ${body}");
-                    }
-                });
-                if (!nodeType.toUpperCase().equals("MASTER")) {
-                    camelContext.addRoutes(new RouteBuilder() {
-                        @Override
-                        public void configure() throws Exception {
-                            StringBuilder consumerURIBuilder = new StringBuilder("kafka:" + consumerTopics);
-
-                            kafkaConfiguration.setTopic(consumerTopics);
-                            consumerURIBuilder.append("?").append(kafkaOptions.toString());
-                            KafkaComponent kafka = new KafkaComponent(this.getContext());
-                            kafka.setConfiguration(kafkaConfiguration);
-                            KafkaEndpoint endpoint = new KafkaEndpoint(consumerURIBuilder.toString(), kafka);
-                            endpoint.setConfiguration(kafkaConfiguration);
-                            this.from(endpoint).unmarshal(objectMapper)
-                                    .process(eventFromKafkaListener)
-                            ;
-                        }
-                    });
-                }
-                camelContext.start();
-                logger.info("KAFKA started");
-            } catch (Exception e) {
-                logger.error("KAFKA error", e);
-                e.printStackTrace();
-            }
         }
     }
 
