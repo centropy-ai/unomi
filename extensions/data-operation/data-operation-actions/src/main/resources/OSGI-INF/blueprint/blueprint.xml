@@ -21,9 +21,9 @@
            xsi:schemaLocation="http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd">
     <cm:property-placeholder persistent-id="org.apache.unomi.operation" update-strategy="reload" placeholder-prefix="${operation.">
         <cm:default-properties>
-            <cm:property name="kafka.brokers" value="kafka:9093"/>
-            <cm:property name="kafka.consumerTopics" value="eventify-event"/>
-            <cm:property name="kafka.producerTopics" value="eventify-event"/>
+            <cm:property name="kafka.brokers" value=""/>
+            <cm:property name="kafka.consumerTopics" value=""/>
+            <cm:property name="kafka.producerTopics" value=""/>
             <cm:property name="kafka.groupId" value=""/>
             <cm:property name="kafka.consumersCount" value="2"/>
             <cm:property name="kafka.autoCommitEnable" value="true"/>
