@@ -34,8 +34,10 @@ public class EventKafkaContext implements SynchronousBundleListener {
 
     private KafkaEventInjectorListener eventFromKafkaListener;
     private boolean initialized = false;
-    String producerTopics = "";
-    String consumerTopics = "";
+    StringBuilder producerURIBuilder = new StringBuilder("kafka:");
+    StringBuilder consumerURIBuilder = new StringBuilder("kafka:");
+    String producerTopics;
+    String consumerTopics;
 
     public void initCamelContext() throws Exception {
         camelContext = new OsgiDefaultCamelContext(bundleContext);
@@ -45,12 +47,13 @@ public class EventKafkaContext implements SynchronousBundleListener {
         KafkaConfiguration kafkaConfiguration = new KafkaConfiguration();
         for (Map.Entry<String, String> entry : kafkaProps.entrySet()) {
             if (entry.getKey().equals("producerTopics")) {
+                producerURIBuilder.append(entry.getValue());
                 producerTopics = entry.getValue();
                 continue;
             }
             if (entry.getKey().equals("consumerTopics")) {
+                consumerURIBuilder.append(entry.getValue());
                 consumerTopics = entry.getValue();
-                kafkaConfiguration.setTopic(entry.getValue());
                 continue;
             }
             if (entry.getKey().equals("brokers")) {
@@ -67,18 +70,18 @@ public class EventKafkaContext implements SynchronousBundleListener {
         }
         kafkaOptions.append("enableIdempotence=true");
 
+        producerURIBuilder.append("?").append(kafkaOptions.toString());
+        consumerURIBuilder.append("?").append(kafkaOptions.toString());
         try {
             camelContext.addRoutes(new RouteBuilder() {
                 @Override
                 public void configure() throws Exception {
-                    StringBuilder producerURIBuilder = new StringBuilder("kafka:" + producerTopics);
-
-                    kafkaConfiguration.setTopic(producerTopics);
-                    producerURIBuilder.append("?").append(kafkaOptions.toString());
                     KafkaComponent kafka = new KafkaComponent(this.getContext());
-                    kafka.setConfiguration(kafkaConfiguration);
+                    KafkaConfiguration pCfg = kafkaConfiguration.copy();
+                    pCfg.setTopic(producerTopics);
+                    kafka.setConfiguration(pCfg);
                     KafkaEndpoint endpoint = new KafkaEndpoint(producerURIBuilder.toString(), kafka);
-                    endpoint.setConfiguration(kafkaConfiguration);
+                    endpoint.setConfiguration(pCfg);
                     this.from("direct:kafkaRoute").marshal(objectMapper).to(endpoint).log("Send to Kafka: ${body}");
                 }
             });
@@ -86,14 +89,12 @@ public class EventKafkaContext implements SynchronousBundleListener {
                 camelContext.addRoutes(new RouteBuilder() {
                     @Override
                     public void configure() throws Exception {
-                        StringBuilder consumerURIBuilder = new StringBuilder("kafka:" + consumerTopics);
-
-                        kafkaConfiguration.setTopic(consumerTopics);
-                        consumerURIBuilder.append("?").append(kafkaOptions.toString());
                         KafkaComponent kafka = new KafkaComponent(this.getContext());
-                        kafka.setConfiguration(kafkaConfiguration);
+                        KafkaConfiguration cCfg = kafkaConfiguration.copy();
+                        cCfg.setTopic(consumerTopics);
+                        kafka.setConfiguration(cCfg);
                         KafkaEndpoint endpoint = new KafkaEndpoint(consumerURIBuilder.toString(), kafka);
-                        endpoint.setConfiguration(kafkaConfiguration);
+                        endpoint.setConfiguration(cCfg);
                         this.from(endpoint).unmarshal(objectMapper)
                                 .process(eventFromKafkaListener)
                         ;
