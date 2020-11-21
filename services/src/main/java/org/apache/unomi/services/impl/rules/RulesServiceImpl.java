@@ -46,9 +46,11 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
 
     public static final String RULE_QUERY_PREFIX = "rule_";
     private static final Logger logger = LoggerFactory.getLogger(RulesServiceImpl.class.getName());
+    public static final String NODE_TYPE = "MASTER";
 
     private BundleContext bundleContext;
 
+    private String nodeType;
     private PersistenceService persistenceService;
     private DefinitionsService definitionsService;
     private EventService eventService;
@@ -57,7 +59,8 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
     private ActionExecutorDispatcher actionExecutorDispatcher;
     private List<Rule> allRules;
 
-    private Map<String,RuleStatistics> allRuleStatistics = new ConcurrentHashMap<>();
+    private Set<String> systemRuleTags;
+    private Map<String, RuleStatistics> allRuleStatistics = new ConcurrentHashMap<>();
 
     private Integer rulesRefreshInterval = 1000;
     private Integer rulesStatisticsRefreshInterval = 10000;
@@ -219,11 +222,13 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }
+
                 Condition sessionCondition = definitionsService.extractConditionBySystemTag(rule.getCondition(), "sessionCondition");
                 if (sessionCondition != null && !persistenceService.testMatch(sessionCondition, event.getSession())) {
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }
+
                 matchedRules.add(rule);
             }
         }
@@ -247,11 +252,30 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
 
     private List<Rule> getAllRules() {
         List<Rule> allItems = persistenceService.getAllItems(Rule.class, 0, -1, "priority").getList();
+        List<Rule> results = new ArrayList<>();
         for (Rule rule : allItems) {
-            ParserHelper.resolveConditionType(definitionsService, rule.getCondition());
-            ParserHelper.resolveActionTypes(definitionsService, rule.getActions());
+            Set<String> tags = rule.getMetadata().getSystemTags();
+            boolean isSystemRule = isSystemRule(tags);
+            if ((nodeType.toUpperCase().equals(NODE_TYPE) && !isSystemRule) || (!nodeType.toUpperCase().equals(NODE_TYPE) && isSystemRule) || tags.contains("global")) {
+                ParserHelper.resolveConditionType(definitionsService, rule.getCondition());
+                ParserHelper.resolveActionTypes(definitionsService, rule.getActions());
+                results.add(rule);
+                logger.info("Add rule {} for server {}", rule.getItemId(), nodeType);
+            }
         }
-        return allItems;
+        return results;
+    }
+
+    private boolean isSystemRule(Set<String> tags) {
+        if (tags == null) {
+            return false;
+        }
+        for (String entry: systemRuleTags) {
+            if (tags.contains(entry)) {
+                return true;
+            }
+        }
+        return false;
     }
 
 
@@ -276,11 +300,6 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
                 continue;
             }
             long totalActionsTime = System.currentTimeMillis() - actionsStartTime;
-            Event ruleFired = new Event("ruleFired", event.getSession(), event.getProfile(), event.getScope(), event, rule, event.getTimeStamp());
-            ruleFired.getAttributes().putAll(event.getAttributes());
-            ruleFired.setPersistent(false);
-            changes |= eventService.send(ruleFired);
-
             RuleStatistics ruleStatistics = getLocalRuleStatistics(rule);
             ruleStatistics.setLocalExecutionCount(ruleStatistics.getLocalExecutionCount()+1);
             ruleStatistics.setLocalActionsTime(ruleStatistics.getLocalActionsTime() + totalActionsTime);
@@ -520,4 +539,11 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
         }
     }
 
+    public void setNodeType(String nodeType) {
+        this.nodeType = nodeType;
+    }
+
+    public void setSystemRuleTags(Set<String> systemRuleTags) {
+        this.systemRuleTags = systemRuleTags;
+    }
 }

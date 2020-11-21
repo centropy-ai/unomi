@@ -54,30 +54,39 @@ services:
       - UNOMI_ELASTICSEARCH_ADDRESSES=elasticsearch:9200
       - UNOMI_ROOT_PASSWORD=paulaan.me
       - KAFKA_BROKERS=kafka:9093
-      - KAFKA_TOPIC=eventify-event
-      - REDIS_CLUSTER=redis://redis-cluster:7000,redis://redis-cluster:7001
+      - KAFKA_PRODUCER_TOPICS=eventify-event
+      - KAFKA_CONSUMER_TOPICS=eventify-event
+      - UNOMI_APACHE_NODE_TYPE=MASTER
+      - UNOMI_RULES_REFRESH_INTERVAL=60000
     links:
       - elasticsearch
     depends_on:
       - elasticsearch
     networks:
       - kong-net
-
     ports:
     - "8282:8181"
-  redis-cluster:
-    environment:
-      IP: ${REDIS_CLUSTER_IP}
-      SENTINEL: ${REDIS_USE_SENTINEL}
-      STANDALONE: ${REDIS_USE_STANDALONE}
+  unomislaver:
     build:
-      context: ./redis-docker
-      args:
-        redis_version: '6.0.1'
-    hostname: server
-    ports:
-      - '7000-7050:7000-7050'
-      - '5000-5010:5000-5010'
+      dockerfile: Local.Dockerfile
+      context: .
+    environment:
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - UNOMI_ELASTICSEARCH_ADDRESSES=elasticsearch:9200
+      - UNOMI_ROOT_PASSWORD=paulaan.me
+      - KAFKA_BROKERS=kafka:9093
+      - KAFKA_PRODUCER_TOPICS=eventify-system-event
+      - KAFKA_CONSUMER_GROUP_ID=unomi-slaver-consumer
+      - KAFKA_CONSUMER_TOPICS=eventify-event,replay-event
+      - UNOMI_APACHE_NODE_TYPE=SLAVER
+      - UNOMI_RULES_REFRESH_INTERVAL=60000
+    links:
+      - elasticsearch
+    depends_on:
+      - elasticsearch
+    networks:
+      - kong-net
 
   kong-migrations:
     image: "${KONG_DOCKER_TAG:-kong:latest}"

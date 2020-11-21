@@ -25,7 +25,7 @@ public class BufferEventProcessingAction implements ActionExecutor {
 
     public EventProducer getProducer() {
         if (this.producer == null)
-            this.producer = new EventContextProducer(this.context.getProducer());
+            this.producer = new EventContextProducer(this.context.getBuffer());
         return this.producer;
     }
 

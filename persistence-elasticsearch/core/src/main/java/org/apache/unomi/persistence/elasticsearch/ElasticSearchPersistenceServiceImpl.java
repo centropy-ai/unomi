@@ -1296,10 +1296,12 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
         try {
             final Class<? extends Item> clazz = item.getClass();
             String itemType = Item.getItemType(clazz);
-
+            Map<String, Object> context = new HashMap<>();
+            context.put("event", item);
+            logger.info("write event {}(id {}) to context", item.getItemType(), item.getItemId());
             QueryBuilder builder = QueryBuilders.boolQuery()
                     .must(QueryBuilders.idsQuery().addIds(item.getItemId()))
-                    .must(conditionESQueryBuilderDispatcher.buildFilter(query));
+                    .must(conditionESQueryBuilderDispatcher.buildFilter(query, context));
             return queryCount(builder, itemType) > 0;
         } finally {
             if (metricsService != null && metricsService.isActivated()) {

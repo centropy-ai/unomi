@@ -31,10 +31,13 @@ import org.apache.unomi.scripting.ScriptExecutor;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
 public class PastEventConditionESQueryBuilder implements ConditionESQueryBuilder {
+    private static final Logger logger = LoggerFactory.getLogger(PastEventConditionESQueryBuilder.class.getName());
 
     private DefinitionsService definitionsService;
     private PersistenceService persistenceService;
@@ -72,6 +75,7 @@ public class PastEventConditionESQueryBuilder implements ConditionESQueryBuilder
         Integer minimumEventCount = condition.getParameter("minimumEventCount") == null ? 1 : (Integer) condition.getParameter("minimumEventCount");
         Integer maximumEventCount = condition.getParameter("maximumEventCount") == null ? Integer.MAX_VALUE : (Integer) condition.getParameter("maximumEventCount");
 
+        logger.info("Event item {}", context.get("event"));
         if (condition.getParameter("generatedPropertyKey") != null && condition.getParameter("generatedPropertyKey").equals(segmentService.getGeneratedPropertyKey((Condition) condition.getParameter("eventCondition"), condition))) {
             // A property is already set on profiles matching the past event condition, use it
             if (minimumEventCount != 1 || maximumEventCount != Integer.MAX_VALUE) {
@@ -98,6 +102,7 @@ public class PastEventConditionESQueryBuilder implements ConditionESQueryBuilder
             // Get full cardinality to partition the terms aggreggation
             Map<String, Double> m = persistenceService.getSingleValuesMetrics(eventCondition, new String[]{"card"}, "profileId.keyword", Event.ITEM_TYPE);
             long card = m.get("_card").longValue();
+            logger.info("Query num {}, with condition {}", card, eventCondition);
 
             int numParts = (int) (card / aggregateQueryBucketSize) + 2;
             for (int i = 0; i < numParts; i++) {
@@ -181,6 +186,10 @@ public class PastEventConditionESQueryBuilder implements ConditionESQueryBuilder
         andCondition.setParameter("operator", "and");
         andCondition.setParameter("subConditions", l);
 
+        Event event = (Event) context.get("event");
+        if (event != null) {
+            logger.info("Past Event {} at {}", event.getEventType(), event.getTimeStamp().toString());
+        }
         l.add(ConditionContextHelper.getContextualCondition(eventCondition, context, scriptExecutor));
 
         Integer numberOfDays = (Integer) condition.getParameter("numberOfDays");
