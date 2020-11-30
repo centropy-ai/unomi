@@ -1,0 +1,15 @@
+{
+  "metadata": {
+    "id": "determineProfileOnPropertiesAction",
+    "name": "determineProfileOnPropertiesAction",
+    "description": "",
+    "systemTags": [
+      "profileTags",
+      "demographic"
+    ],
+    "readOnly": true
+  },
+  "actionExecutor": "determineProfileOnProperties",
+  "parameters": [
+  ]
+}

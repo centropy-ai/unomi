@@ -265,6 +265,17 @@
     </service>
     <service interface="org.apache.unomi.api.actions.ActionExecutor">
         <service-properties>
+            <entry key="actionExecutorId" value="determineProfileOnProperties"/>
+        </service-properties>
+        <bean class="org.apache.unomi.plugins.baseplugin.actions.DetermineProfileOnPropertiesAction">
+            <property name="eventService" ref="eventService"/>
+            <property name="persistenceService" ref="persistenceService"/>
+            <property name="definitionsService" ref="definitionsService"/>
+            <property name="configSharingService" ref="configSharingService" />
+        </bean>
+    </service>
+    <service interface="org.apache.unomi.api.actions.ActionExecutor">
+        <service-properties>
             <entry key="actionExecutorId" value="assignSegment"/>
         </service-properties>
         <bean class="org.apache.unomi.plugins.baseplugin.actions.AssignSegmentAction">

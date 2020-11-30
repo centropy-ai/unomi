@@ -14125,9 +14125,6 @@ Prime.prototype.processReferrer = function () {
                 window.digitalData.page.pageInfo.referrerHost = referrer.host;
                 window.digitalData.page.pageInfo.referrerQuery = query;
             }
-
-            // register referrer event
-            this.registerEvent(this.buildEvent('viewFromReferrer', this.buildTargetPage()));
         }
     }
 };
@@ -14140,9 +14137,11 @@ Prime.prototype.processReferrer = function () {
  * @param {Identify} identify
  */
 Prime.prototype.identify = function (identify) {
-    this.collectEvent(this.buildEvent("identify",
+    var self = this;
+    this.registerEvent(this.buildEvent("identify",
         this.buildTarget(identify.userId(), "analyticsUser", identify.traits()),
         this.buildSource(location.href, 'page', identify.context())));
+    setTimeout(self.loadContext.bind(self), 0);
 };
 
 /**
@@ -14383,12 +14382,8 @@ Prime.prototype.collectEvents = function (events, successCallback, errorCallback
 
 Prime.prototype.registerEvent = function (event) {
     if (window.digitalData) {
-        if (window.cxs) {
-            console.error('[Tracker] already loaded, too late...');
-        } else {
-            window.digitalData.events = window.digitalData.events || [];
-            window.digitalData.events.push(event);
-        }
+        window.digitalData.events = window.digitalData.events || [];
+        window.digitalData.events.push(event);
     } else {
         window.digitalData = {};
         window.digitalData.events = window.digitalData.events || [];
@@ -14399,19 +14394,16 @@ Prime.prototype.registerEvent = function (event) {
 Prime.prototype.registerCallback = function (onLoadCallback) {
     if (window.digitalData) {
         if (window.cxs) {
-            console.info('[Tracker] digitalData object loaded, calling on load callback immediately and registering update callback...');
             if (onLoadCallback) {
                 onLoadCallback(window.digitalData);
             }
         } else {
-            console.info('[Tracker] digitalData object present but not loaded, registering load callback...');
             if (onLoadCallback) {
                 window.digitalData.loadCallbacks = window.digitalData.loadCallbacks || [];
                 window.digitalData.loadCallbacks.push(onLoadCallback);
             }
         }
     } else {
-        console.info('[Tracker] No digital data object found, creating and registering update callback...');
         window.digitalData = {};
         if (onLoadCallback) {
             window.digitalData.loadCallbacks = [];
@@ -14560,8 +14552,8 @@ Prime.prototype.context = function () {
         || document.body.clientHeight;
     try {
         var connectionType = navigator.connection.type || navigator.connection.effectiveType;
-    }catch (e) {
-        connectionType = "unknown-"+navigator.platform
+    } catch (e) {
+        connectionType = "unknown-" + navigator.platform
     }
     var data = utm.default.parse()
     data.screen_width = width;
