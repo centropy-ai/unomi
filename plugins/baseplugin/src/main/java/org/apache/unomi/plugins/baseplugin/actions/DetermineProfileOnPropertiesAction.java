@@ -41,7 +41,7 @@ public class DetermineProfileOnPropertiesAction implements ActionExecutor {
     private EventService eventService;
     private DefinitionsService definitionsService;
     private ConfigSharingService configSharingService;
-    String[] profileMergeFields = {"email", "phone", "cellphone", "device_id"};
+    String[] profileMergeFields = {"email", "phone", "cellphone", "device_id", "id"};
 
     public int execute(Action action, Event event) {
         String profileIdCookieName = (String) configSharingService.getProperty("profileIdCookieName");
