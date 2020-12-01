@@ -70,13 +70,9 @@ public class DetermineProfileOnPropertiesAction implements ActionExecutor {
             subConditions.add(propertyCondition);
         }
 
-        Condition excludeMergedProfilesCondition = new Condition(definitionsService.getConditionType("profilePropertyCondition"));
-        excludeMergedProfilesCondition.setParameter("comparisonOperator", "missing");
-        excludeMergedProfilesCondition.setParameter("propertyName", "mergedWith");
-        subConditions.add(excludeMergedProfilesCondition);
 
         Condition c = new Condition(definitionsService.getConditionType("booleanCondition"));
-        c.setParameter("operator", "and");
+        c.setParameter("operator", "or");
         c.setParameter("subConditions", subConditions);
 
         final List<Profile> profiles = persistenceService.query(c, "properties.firstVisit", Profile.class);
@@ -84,9 +80,7 @@ public class DetermineProfileOnPropertiesAction implements ActionExecutor {
             // Take existing profile
             profile = profiles.get(0);
         } else {
-            // Create a new profile
-            profile = new Profile(Item.getKSUID());
-            profile.setProperty("firstVisit", currentSession.getTimeStamp());
+            return EventService.NO_CHANGE;
         }
 
         HttpServletResponse httpServletResponse = (HttpServletResponse) event.getAttributes().get(Event.HTTP_RESPONSE_ATTRIBUTE);
