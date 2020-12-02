@@ -58,6 +58,7 @@ public class DetermineProfileOnPropertiesAction implements ActionExecutor {
 
         // store the profile id in case the merge change it to a previous one
         String profileId = profile.getItemId();
+        Profile previousProfile = event.getProfile();
         List<Condition> subConditions = new ArrayList<>();
         for (Map.Entry<String, Object> entry : target.getProperties().entrySet()) {
             if (!ArrayUtils.contains(profileMergeFields, entry.getKey())) {
@@ -92,7 +93,7 @@ public class DetermineProfileOnPropertiesAction implements ActionExecutor {
 
         currentSession.setProfile(profile);
 
-        eventService.send(new Event("sessionReassigned", currentSession, profile, event.getScope(), event, currentSession, event.getTimeStamp()));
+        eventService.send(new Event("mergedProfile", currentSession, profile, event.getScope(), profile, previousProfile, event.getTimeStamp()));
 
         return EventService.PROFILE_UPDATED + EventService.SESSION_UPDATED;
     }

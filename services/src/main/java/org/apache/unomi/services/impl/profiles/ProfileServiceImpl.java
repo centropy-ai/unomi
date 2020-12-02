@@ -517,6 +517,9 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
     }
 
     public Profile save(Profile profile) {
+        if (profile.getItemId().length() == 0 || profile.getItemId() == null) {
+            profile.setItemId(Item.getKSUID());
+        }
         return save(profile, forceRefreshOnSave);
     }
 

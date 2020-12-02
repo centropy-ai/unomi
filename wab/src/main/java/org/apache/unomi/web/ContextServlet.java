@@ -146,10 +146,10 @@ public class ContextServlet extends HttpServlet {
             return;
         }
 
+        boolean profileCreated = false;
         int changes = EventService.NO_CHANGE;
         if (profile == null) {
             // Not a persona, resolve profile now
-            boolean profileCreated = false;
 
             boolean invalidateProfile = request.getParameter("invalidateProfile") != null ?
                     new Boolean(request.getParameter("invalidateProfile")) : false;
@@ -282,18 +282,18 @@ public class ContextServlet extends HttpServlet {
         }
 
         if ((changes & EventService.PROFILE_UPDATED) == EventService.PROFILE_UPDATED) {
-            logger.debug("reach save profile");
             profileService.save(profile);
-            logger.debug("reach save profile completed");
+            if (!profileCreated) {
+                Event profileUpdated = new Event("profileUpdated", session, profile, scope, null, null, timestamp);
+                eventService.send(profileUpdated);
+            }
             contextResponse.setProfileId(profile.getItemId());
         }
         if ((changes & EventService.SESSION_UPDATED) == EventService.SESSION_UPDATED && session != null) {
             profileService.saveSession(session);
             contextResponse.setSessionId(session.getItemId());
-            logger.debug("Reach send event");
             eventService.send(new Event("sessionUpdated", session, profile, scope, contextRequest.getEvents().get(0), session, timestamp));
         }
-        logger.debug("reach sent profile");
         if ((changes & EventService.ERROR) == EventService.ERROR) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
