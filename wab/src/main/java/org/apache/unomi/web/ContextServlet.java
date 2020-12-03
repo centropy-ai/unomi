@@ -292,7 +292,7 @@ public class ContextServlet extends HttpServlet {
         if ((changes & EventService.SESSION_UPDATED) == EventService.SESSION_UPDATED && session != null) {
             profileService.saveSession(session);
             contextResponse.setSessionId(session.getItemId());
-            eventService.send(new Event("sessionUpdated", session, profile, scope, contextRequest.getEvents().get(0), session, timestamp));
+            eventService.send(new Event("sessionUpdated", session, profile, scope, contextRequest.getEvents().get(0), session, contextRequest.getEvents().get(0).getTimeStamp()));
         }
         if ((changes & EventService.ERROR) == EventService.ERROR) {
             response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);

@@ -173,12 +173,8 @@ public class GoalsServiceImpl implements GoalsService, SynchronousBundleListener
 
         rule.setCondition(res);
         rule.getMetadata().setHidden(true);
-//        Action action1 = new Action();
-//        action1.setActionType(definitionsService.getActionType("setPropertyAction"));
         String name = "systemProperties.goals." + goal.getMetadata().getId() + id + "Reached";
-//        action1.setParameter("setPropertyName", name);
-//        action1.setParameter("setPropertyValue", "now");
-//        action1.setParameter("storeInSession", true);
+
         Action action2 = new Action();
         action2.setActionType(definitionsService.getActionType("setPropertyAction"));
         action2.setParameter("setPropertyName", name);
@@ -193,7 +189,7 @@ public class GoalsServiceImpl implements GoalsService, SynchronousBundleListener
             action3.setParameter("eventTarget", goal);
             action3.setParameter("persistence", false);
             action3.setParameter("eventProperties", new HashMap<String, Object>());
-            rule.setActions(Arrays.asList(action1,action2,action3));
+            rule.setActions(Arrays.asList(action2,action3));
         }
 
         rulesService.setRule(rule);
