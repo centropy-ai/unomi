@@ -150,14 +150,14 @@ public class GoalsServiceImpl implements GoalsService, SynchronousBundleListener
         subConditions.add(event);
 
         Condition notExist = new Condition();
-        notExist.setConditionType(definitionsService.getConditionType("sessionPropertyCondition"));
+        notExist.setConditionType(definitionsService.getConditionType("profilePropertyCondition"));
         notExist.setParameter("propertyName", "systemProperties.goals." + goal.getMetadata().getId() + id + "Reached");
         notExist.setParameter("comparisonOperator", "missing");
         subConditions.add(notExist);
 
         if (testStart) {
             Condition startExists = new Condition();
-            startExists.setConditionType(definitionsService.getConditionType("sessionPropertyCondition"));
+            startExists.setConditionType(definitionsService.getConditionType("profilePropertyCondition"));
             startExists.setParameter("propertyName", "systemProperties.goals." + goal.getMetadata().getId() + "StartReached");
             startExists.setParameter("comparisonOperator", "exists");
             subConditions.add(startExists);
@@ -173,18 +173,18 @@ public class GoalsServiceImpl implements GoalsService, SynchronousBundleListener
 
         rule.setCondition(res);
         rule.getMetadata().setHidden(true);
-        Action action1 = new Action();
-        action1.setActionType(definitionsService.getActionType("setPropertyAction"));
+//        Action action1 = new Action();
+//        action1.setActionType(definitionsService.getActionType("setPropertyAction"));
         String name = "systemProperties.goals." + goal.getMetadata().getId() + id + "Reached";
-        action1.setParameter("setPropertyName", name);
-        action1.setParameter("setPropertyValue", "now");
-        action1.setParameter("storeInSession", true);
+//        action1.setParameter("setPropertyName", name);
+//        action1.setParameter("setPropertyValue", "now");
+//        action1.setParameter("storeInSession", true);
         Action action2 = new Action();
         action2.setActionType(definitionsService.getActionType("setPropertyAction"));
         action2.setParameter("setPropertyName", name);
         action2.setParameter("setPropertyValue", "script::profile.properties.?"+name+" != null ? (profile.properties."+name+") : 'now'");
         action2.setParameter("storeInSession", false);
-        rule.setActions(Arrays.asList(action1, action2));
+        rule.setActions(Arrays.asList(action2));
 
         if (id.equals("Target")) {
             Action action3 = new Action();
