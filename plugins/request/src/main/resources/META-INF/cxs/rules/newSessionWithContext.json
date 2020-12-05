@@ -53,6 +53,30 @@
     },
     {
       "parameterValues": {
+        "setPropertyName": "properties.utm_name",
+        "setPropertyValue": "eventProperty::target.properties.utm_name",
+        "storeInSession": true
+      },
+      "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.utm_promotion",
+        "setPropertyValue": "eventProperty::target.properties.utm_promotion",
+        "storeInSession": true
+      },
+      "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.utm_channel_tactic",
+        "setPropertyValue": "eventProperty::target.properties.utm_channel_tactic",
+        "storeInSession": true
+      },
+      "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
         "setPropertyName": "properties.screen_width",
         "setPropertyValueInteger": "eventProperty::target.properties.screen_width",
         "storeInSession": true

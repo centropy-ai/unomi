@@ -575,7 +575,7 @@ Prime.prototype.extendSessionID = function () {
 }
 
 Prime.prototype.context = function () {
-    var utm = require('utm-params-saver');
+    var utm = require("@segment/utm-params");
     var width = window.innerWidth
         || document.documentElement.clientWidth
         || document.body.clientWidth;
@@ -588,7 +588,11 @@ Prime.prototype.context = function () {
     } catch (e) {
         connectionType = "unknown-" + navigator.platform
     }
-    var data = utm.default.parse()
+    var utm_params = utm(document.location)
+    var data = {}
+    utm_params.forEach(function (key) {
+        data["utm_" + key] = utm_params[key]
+    });
     data.screen_width = width;
     data.screen_height = height;
     data.connection_type = connectionType;

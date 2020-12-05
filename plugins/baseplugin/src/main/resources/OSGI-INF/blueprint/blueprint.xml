@@ -199,6 +199,14 @@
 
     <service interface="org.apache.unomi.api.actions.ActionExecutor">
         <service-properties>
+            <entry key="actionExecutorId" value="attributionTouchPoint"/>
+        </service-properties>
+        <bean class="org.apache.unomi.plugins.baseplugin.actions.AttributionAction">
+        </bean>
+    </service>
+
+    <service interface="org.apache.unomi.api.actions.ActionExecutor">
+        <service-properties>
             <entry key="actionExecutorId" value="updateProperties"/>
         </service-properties>
         <bean class="org.apache.unomi.plugins.baseplugin.actions.UpdatePropertiesAction">

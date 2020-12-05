@@ -1,0 +1,23 @@
+{
+  "metadata": {
+    "id": "directTouchPoints",
+    "name": "Define direct traffic",
+    "description": "Define touch points",
+    "readOnly": true
+  },
+  "priority": 20,
+  "condition": {
+    "parameterValues": {},
+    "type": "sessionCreatedEventCondition"
+  },
+  "actions": [
+    {
+      "parameterValues": {
+        "getEventTypeProperty": "eventProperty::source.eventType",
+        "getReferringURLProperty": "eventProperty::source.target.properties.pageInfo.referringURL",
+        "getDestinationURLProperty": "eventProperty::source.target.properties.pageInfo.destinationURL"
+      },
+      "type": "attributionAction"
+    }
+  ]
+}
