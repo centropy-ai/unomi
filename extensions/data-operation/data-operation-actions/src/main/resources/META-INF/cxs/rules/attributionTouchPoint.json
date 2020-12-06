@@ -13,9 +13,9 @@
   "actions": [
     {
       "parameterValues": {
-        "getEventTypeProperty": "eventProperty::source.eventType",
-        "getReferringURLProperty": "eventProperty::source.target.properties.pageInfo.referringURL",
-        "getDestinationURLProperty": "eventProperty::source.target.properties.pageInfo.destinationURL"
+        "eventTypeProperty": "eventProperty::source.eventType",
+        "referringURLProperty": "eventProperty::source.target.properties.pageInfo.referringURL",
+        "destinationURLProperty": "eventProperty::source.target.properties.pageInfo.destinationURL"
       },
       "type": "attributionAction"
     }
