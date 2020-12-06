@@ -14,39 +14,19 @@
   "actionExecutor": "attributionTouchPoint",
   "parameters": [
     {
-      "id": "setPropertyName",
+      "id": "destinationURLProperty",
       "type": "string",
       "multivalued": false
     },
     {
-      "id": "setPropertyValue",
+      "id": "referringURLProperty",
       "type": "string",
       "multivalued": false
     },
     {
-      "id": "setPropertyValueBoolean",
-      "type": "boolean",
-      "multivalued": false
-    },
-    {
-      "id": "setPropertyValueInteger",
-      "type": "integer",
-      "multivalued": false
-    },
-    {
-      "id": "setPropertyValueMultiple",
+      "id": "eventTypeProperty",
       "type": "string",
       "multivalued": true
-    },
-    {
-      "id": "setPropertyStrategy",
-      "type": "string",
-      "multivalued": false
-    },
-    {
-      "id": "storeInSession",
-      "type": "boolean",
-      "multivalued": false
     }
   ]
 }

@@ -49,9 +49,9 @@ public class AttributionAction implements ActionExecutor {
 
         String touchType = "";
 
-        String eventType = (String) action.getParameterValues().get("getEventTypeProperty");
-        String referringValue = (String) action.getParameterValues().get("getReferringURLProperty");
-        String destinationValue = (String) action.getParameterValues().get("getDestinationURLProperty");
+        String eventType = (String) action.getParameterValues().get("eventTypeProperty");
+        String referringValue = (String) action.getParameterValues().get("referringURLProperty");
+        String destinationValue = (String) action.getParameterValues().get("destinationURLProperty");
         if (referringValue == null) {
             referringValue = "";
         }
