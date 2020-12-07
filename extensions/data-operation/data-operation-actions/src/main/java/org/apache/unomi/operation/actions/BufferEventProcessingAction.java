@@ -1,5 +1,6 @@
 package org.apache.unomi.operation.actions;
 
+import org.apache.commons.lang3.StringUtils;
 import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Session;
 import org.apache.unomi.api.actions.Action;
@@ -23,9 +24,17 @@ public class BufferEventProcessingAction implements ActionExecutor {
         Session session = event.getSession();
         if (session.getProperty("touch_type") != null) {
             event.setProperty("touch_type", session.getProperty("touch_type"));
-            event.setProperty("touch_channel", session.getProperty("touch_channel"));
             event.setProperty("touch_campaign", session.getProperty("touch_campaign"));
             event.setProperty("touch_event", session.getProperty("touch_event"));
+            String source = (String) session.getProperty("touch_source");
+            if (source.length() > 0) {
+                String[] extractSources = StringUtils.split(source, ".");
+                if (extractSources.length > 1) {
+                    String channel = extractSources[extractSources.length - 2] + "." + extractSources[extractSources.length - 1];
+                    event.setProperty("touch_channel", channel);
+                }
+            }
+            event.setProperty("touch_source", source);
         }
         this.getProducer().send(event);
         return EventService.NO_CHANGE;

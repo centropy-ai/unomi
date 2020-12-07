@@ -84,7 +84,7 @@ public class AttributionAction implements ActionExecutor {
         }
         if (touchType.length() > 0) {
             PropertyHelper.setProperty(event.getSession(), "properties.touch_type", touchType, "setIfMissing");
-            PropertyHelper.setProperty(event.getSession(), "properties.touch_channel", referringValue, "setIfMissing");
+            PropertyHelper.setProperty(event.getSession(), "properties.touch_source", referringValue, "setIfMissing");
             PropertyHelper.setProperty(event.getSession(), "properties.touch_campaign", campaign, "setIfMissing");
             PropertyHelper.setProperty(event.getSession(), "properties.touch_event", eventType, "setIfMissing");
             return EventService.SESSION_UPDATED;
