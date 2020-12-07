@@ -1,6 +1,7 @@
 package org.apache.unomi.operation.actions;
 
 import org.apache.unomi.api.Event;
+import org.apache.unomi.api.Session;
 import org.apache.unomi.api.actions.Action;
 import org.apache.unomi.api.actions.ActionExecutor;
 import org.apache.unomi.api.services.EventService;
@@ -19,6 +20,13 @@ public class BufferEventProcessingAction implements ActionExecutor {
 
     @Override
     public int execute(Action action, Event event) {
+        Session session = event.getSession();
+        if (session.getProperty("touch_type") != null) {
+            event.setProperty("touch_type", session.getProperty("touch_type"));
+            event.setProperty("touch_channel", session.getProperty("touch_channel"));
+            event.setProperty("touch_campaign", session.getProperty("touch_campaign"));
+            event.setProperty("touch_event", session.getProperty("touch_event"));
+        }
         this.getProducer().send(event);
         return EventService.NO_CHANGE;
     }
