@@ -583,16 +583,16 @@ Prime.prototype.context = function () {
     var height = window.innerHeight
         || document.documentElement.clientHeight
         || document.body.clientHeight;
+    var utm_params = utm(location.search)
+    var data = {}
     try {
         var connectionType = navigator.connection.type || navigator.connection.effectiveType;
+        Object.keys(utm_params).forEach(function (key) {
+            data["utm_" + key] = utm_params[key]
+        });
     } catch (e) {
         connectionType = "unknown-" + navigator.platform
     }
-    var utm_params = utm(document.location)
-    var data = {}
-    utm_params.forEach(function (key) {
-        data["utm_" + key] = utm_params[key]
-    });
     data.screen_width = width;
     data.screen_height = height;
     data.connection_type = connectionType;
