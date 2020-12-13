@@ -1,0 +1,32 @@
+{
+  "metadata": {
+    "id": "attributionAction",
+    "name": "attributionAction",
+    "description": "",
+    "systemTags": [
+      "profileTags",
+      "demographic",
+      "availableToEndUser",
+      "allowMultipleInstances"
+    ],
+    "readOnly": true
+  },
+  "actionExecutor": "attributionTouchPoint",
+  "parameters": [
+    {
+      "id": "destinationURLProperty",
+      "type": "string",
+      "multivalued": false
+    },
+    {
+      "id": "referringURLProperty",
+      "type": "string",
+      "multivalued": false
+    },
+    {
+      "id": "eventTypeProperty",
+      "type": "string",
+      "multivalued": true
+    }
+  ]
+}
