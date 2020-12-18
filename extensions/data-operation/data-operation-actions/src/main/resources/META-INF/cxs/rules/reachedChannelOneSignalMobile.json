@@ -1,0 +1,65 @@
+{
+  "metadata": {
+    "id": "reachedChannelOneSignalMobile",
+    "name": "Define reachable property for OneSignal Mobile",
+    "description": "Define reachable properties based on reach_channel event",
+    "readOnly": true
+  },
+  "condition": {
+    "type": "booleanCondition",
+    "parameterValues": {
+      "subConditions": [
+        {
+          "type": "eventTypeCondition",
+          "parameterValues": {
+            "eventTypeId": "reached_channel"
+          }
+        },
+        {
+          "type": "eventPropertyCondition",
+          "parameterValues": {
+            "propertyName": "properties.onesignal_mobile.identifier_id",
+            "comparisonOperator": "exists"
+          }
+        },
+        {
+          "type": "profilePropertyCondition",
+          "parameterValues": {
+            "propertyName": "properties.channels_reachable.onesignal_mobile.identifier_id",
+            "comparisonOperator": "missing"
+          }
+        }
+      ],
+      "operator": "and"
+    }
+  },
+  "actions": [
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.onesignal_mobile.identifier_id",
+        "setPropertyValue": "eventProperty::properties.onesignal_mobile.identifier_id",
+        "storeInSession": false,
+        "setPropertyStrategy": "setIfMissing"
+      },
+      "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.onesignal_mobile.identifier_id",
+        "setPropertyValue": "eventProperty::properties.onesignal_mobile.identifier_id",
+        "storeInSession": true,
+        "setPropertyStrategy": "setIfMissing"
+      },
+      "type": "setPropertyAction"
+    },
+    {
+      "parameterValues": {
+        "setPropertyName": "properties.channels_reachable.channels",
+        "setPropertyValue": "onesignal_mobile",
+        "storeInSession": false,
+        "setPropertyStrategy": "addValue"
+      },
+      "type": "setPropertyAction"
+    }
+  ]
+}

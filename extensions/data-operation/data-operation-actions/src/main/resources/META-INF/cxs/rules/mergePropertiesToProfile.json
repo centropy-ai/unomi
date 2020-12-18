@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "id": "mergePropertyToProfile",
+    "name": "merge Property To Profile",
+    "description": "Copy event properties to profile properties on identify",
+    "scope": "systemscope",
+    "tags": [],
+    "systemTags": [],
+    "enabled": true,
+    "missingPlugins": false,
+    "hidden": false,
+    "readOnly": false
+  },
+  "itemId": "mergePropertyToProfile",
+  "itemType": "rule",
+  "condition": {
+    "parameterValues": {
+      "operator": "and",
+      "subConditions": [
+        {
+          "parameterValues": {
+            "eventTypeId": "identify"
+          },
+          "type": "eventTypeCondition"
+        }
+      ]
+    },
+    "type": "booleanCondition"
+  },
+  "actions": [
+    {
+      "parameterValues": {},
+      "type": "allEventToProfilePropertiesAction"
+    }
+  ],
+  "linkedItems": null,
+  "raiseEventOnlyOnceForProfile": false,
+  "raiseEventOnlyOnceForSession": false,
+  "raiseEventOnlyOnce": false,
+  "priority": 1
+}
