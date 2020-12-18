@@ -18,14 +18,14 @@
         {
           "type": "eventPropertyCondition",
           "parameterValues": {
-            "propertyName": "properties.onesignal_mobile.identifier_id",
+            "propertyName": "properties.onesignal.mobile_identifier_id",
             "comparisonOperator": "exists"
           }
         },
         {
           "type": "profilePropertyCondition",
           "parameterValues": {
-            "propertyName": "properties.channels_reachable.onesignal_mobile.identifier_id",
+            "propertyName": "properties.channels_reachable.mobile_identifier_id",
             "comparisonOperator": "missing"
           }
         }
@@ -36,8 +36,8 @@
   "actions": [
     {
       "parameterValues": {
-        "setPropertyName": "properties.channels_reachable.onesignal_mobile.identifier_id",
-        "setPropertyValue": "eventProperty::properties.onesignal_mobile.identifier_id",
+        "setPropertyName": "properties.channels_reachable.onesignal.mobile_identifier_id",
+        "setPropertyValue": "eventProperty::properties.onesignal.mobile_identifier_id",
         "storeInSession": false,
         "setPropertyStrategy": "setIfMissing"
       },
@@ -45,8 +45,8 @@
     },
     {
       "parameterValues": {
-        "setPropertyName": "properties.channels_reachable.onesignal_mobile.identifier_id",
-        "setPropertyValue": "eventProperty::properties.onesignal_mobile.identifier_id",
+        "setPropertyName": "properties.channels_reachable.onesignal.mobile_identifier_id",
+        "setPropertyValue": "eventProperty::properties.onesignal.mobile_identifier_id",
         "storeInSession": true,
         "setPropertyStrategy": "setIfMissing"
       },

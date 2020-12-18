@@ -1,7 +1,7 @@
 {
   "metadata": {
-    "id": "reachedChannelOneSignalInApp",
-    "name": "Define reachable property for OneSignal InApp",
+    "id": "reachedChannelOneSignalWeb",
+    "name": "Define reachable property for OneSignal Web",
     "description": "Define reachable properties based on reach_channel event",
     "readOnly": true
   },
@@ -18,14 +18,14 @@
         {
           "type": "eventPropertyCondition",
           "parameterValues": {
-            "propertyName": "properties.onesignal_in_app.identifier_id",
+            "propertyName": "properties.onesignal_web.identifier_id",
             "comparisonOperator": "exists"
           }
         },
         {
           "type": "profilePropertyCondition",
           "parameterValues": {
-            "propertyName": "properties.channels_reachable.onesignal_in_app.identifier_id",
+            "propertyName": "properties.channels_reachable.onesignal.identifier_id",
             "comparisonOperator": "missing"
           }
         }
@@ -36,8 +36,8 @@
   "actions": [
     {
       "parameterValues": {
-        "setPropertyName": "properties.channels_reachable.onesignal_in_app.identifier_id",
-        "setPropertyValue": "eventProperty::properties.onesignal_in_app.identifier_id",
+        "setPropertyName": "properties.channels_reachable.onesignal.identifier_id",
+        "setPropertyValue": "eventProperty::properties.onesignal.identifier_id",
         "storeInSession": false,
         "setPropertyStrategy": "setIfMissing"
       },
@@ -45,8 +45,8 @@
     },
     {
       "parameterValues": {
-        "setPropertyName": "properties.channels_reachable.onesignal_in_app.identifier_id",
-        "setPropertyValue": "eventProperty::properties.onesignal_in_app.identifier_id",
+        "setPropertyName": "properties.channels_reachable.onesignal.identifier_id",
+        "setPropertyValue": "eventProperty::properties.onesignal.identifier_id",
         "storeInSession": true,
         "setPropertyStrategy": "setIfMissing"
       },
@@ -55,7 +55,7 @@
     {
       "parameterValues": {
         "setPropertyName": "properties.channels_reachable.channels",
-        "setPropertyValue": "onesignal_in_app",
+        "setPropertyValue": "onesignal",
         "storeInSession": false,
         "setPropertyStrategy": "addValue"
       },
