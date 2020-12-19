@@ -182,7 +182,7 @@ public class GoalsServiceImpl implements GoalsService, SynchronousBundleListener
         action2.setParameter("storeInSession", false);
         rule.setActions(Arrays.asList(action2));
 
-        if (id.equals("Target")) {
+        if ((id.equals("Target")) ||(id.equals("Start") && metadata.getSystemTags().contains("start_action_goal"))){
             Action action3 = new Action();
             action3.setActionType(definitionsService.getActionType("sendEventAction"));
             action3.setParameter("eventType", "goal");
