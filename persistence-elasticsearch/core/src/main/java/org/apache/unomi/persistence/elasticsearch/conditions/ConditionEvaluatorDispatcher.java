@@ -17,6 +17,7 @@
 
 package org.apache.unomi.persistence.elasticsearch.conditions;
 
+import org.apache.unomi.api.Event;
 import org.apache.unomi.api.Item;
 import org.apache.unomi.api.conditions.Condition;
 import org.apache.unomi.metrics.MetricAdapter;
