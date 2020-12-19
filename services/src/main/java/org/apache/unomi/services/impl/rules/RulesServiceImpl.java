@@ -184,13 +184,13 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
 
                 fireEvaluate(rule, event);
 
-                if (!persistenceService.testMatch(eventCondition, event)) {
+                if (!persistenceService.testMatch(eventCondition, event, event.getTimeStamp().getTime())) {
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }
 
                 Condition sourceCondition = definitionsService.extractConditionBySystemTag(rule.getCondition(), "sourceEventCondition");
-                if (sourceCondition != null && !persistenceService.testMatch(sourceCondition, event.getSource())) {
+                if (sourceCondition != null && !persistenceService.testMatch(sourceCondition, event.getSource(), event.getTimeStamp().getTime())) {
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }
@@ -218,13 +218,13 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
                 }
 
                 Condition profileCondition = definitionsService.extractConditionBySystemTag(rule.getCondition(), "profileCondition");
-                if (profileCondition != null && !persistenceService.testMatch(profileCondition, event.getProfile())) {
+                if (profileCondition != null && !persistenceService.testMatch(profileCondition, event.getProfile(), event.getTimeStamp().getTime())) {
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }
 
                 Condition sessionCondition = definitionsService.extractConditionBySystemTag(rule.getCondition(), "sessionCondition");
-                if (sessionCondition != null && !persistenceService.testMatch(sessionCondition, event.getSession())) {
+                if (sessionCondition != null && !persistenceService.testMatch(sessionCondition, event.getSession(), event.getTimeStamp().getTime())) {
                     updateRuleStatistics(ruleStatistics, ruleConditionStartTime);
                     continue;
                 }

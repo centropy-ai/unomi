@@ -246,6 +246,17 @@ public interface PersistenceService {
     boolean testMatch(Condition query, Item item);
 
     /**
+     * Checks whether the specified item satisfies the provided condition.
+     *
+     * TODO: rename to isMatching?
+     *
+     * @param query the condition we're testing the specified item against
+     * @param item  the item we're checking against the specified condition
+     * @return {@code true} if the item satisfies the condition, {@code false} otherwise
+     */
+    boolean testMatch(Condition query, Item item, long unixTimestamp);
+
+    /**
      * Same as {@code query(fieldName, fieldValue, sortBy, clazz, 0, -1).getList()}
      *
      * @see #query(Condition, String, Class, int, int)

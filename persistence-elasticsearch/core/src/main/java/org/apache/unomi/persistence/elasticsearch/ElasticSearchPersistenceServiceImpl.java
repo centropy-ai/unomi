@@ -1282,9 +1282,18 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
 
     @Override
     public boolean testMatch(Condition query, Item item) {
+        return this.testMatch(query, item, 0);
+    }
+
+    @Override
+    public boolean testMatch(Condition query, Item item, long unixTimestamp) {
+        Map<String, Object> context = new HashMap<>();
+        if (unixTimestamp > 0) {
+            context.put("timeStamp", unixTimestamp);
+        }
         long startTime = System.currentTimeMillis();
         try {
-            return conditionEvaluatorDispatcher.eval(query, item);
+            return conditionEvaluatorDispatcher.eval(query, item, context);
         } catch (UnsupportedOperationException e) {
             logger.error("Eval not supported, continue with query", e);
         } finally {
@@ -1296,9 +1305,6 @@ public class ElasticSearchPersistenceServiceImpl implements PersistenceService, 
         try {
             final Class<? extends Item> clazz = item.getClass();
             String itemType = Item.getItemType(clazz);
-            Map<String, Object> context = new HashMap<>();
-            context.put("event", item);
-            logger.info("write event {}(id {}) to context", item.getItemType(), item.getItemId());
             QueryBuilder builder = QueryBuilders.boolQuery()
                     .must(QueryBuilders.idsQuery().addIds(item.getItemId()))
                     .must(conditionESQueryBuilderDispatcher.buildFilter(query, context));

@@ -185,20 +185,31 @@ public class PastEventConditionESQueryBuilder implements ConditionESQueryBuilder
         andCondition.setConditionType(definitionsService.getConditionType("booleanCondition"));
         andCondition.setParameter("operator", "and");
         andCondition.setParameter("subConditions", l);
-
-        Event event = (Event) context.get("event");
-        if (event != null) {
-            logger.info("Past Event {} at {}", event.getEventType(), event.getTimeStamp().toString());
-        }
         l.add(ConditionContextHelper.getContextualCondition(eventCondition, context, scriptExecutor));
 
         Integer numberOfDays = (Integer) condition.getParameter("numberOfDays");
         if (numberOfDays != null) {
             Condition numberOfDaysCondition = new Condition();
+            String dateExpression = "now-" + numberOfDays + "d";
+            if (context.containsKey("timeStamp")) {
+                long deltaTime = (long) context.get("timeStamp");
+                int hours = Math.toIntExact(((new Date().getTime() - deltaTime) / 1000) / 3600);
+                if (hours > 0) {
+                    int fromHours = numberOfDays * 24 + hours;
+                    dateExpression = "now-" + fromHours + "h";
+
+                    Condition lessThan = new Condition();
+                    lessThan.setConditionType(definitionsService.getConditionType("sessionPropertyCondition"));
+                    lessThan.setParameter("propertyName", "timeStamp");
+                    lessThan.setParameter("comparisonOperator", "lessThan");
+                    lessThan.setParameter("propertyValueDateExpr", "now-" + hours + "h");
+                    l.add(lessThan);
+                }
+            }
             numberOfDaysCondition.setConditionType(definitionsService.getConditionType("sessionPropertyCondition"));
             numberOfDaysCondition.setParameter("propertyName", "timeStamp");
             numberOfDaysCondition.setParameter("comparisonOperator", "greaterThan");
-            numberOfDaysCondition.setParameter("propertyValueDateExpr", "now-" + numberOfDays + "d");
+            numberOfDaysCondition.setParameter("propertyValueDateExpr", dateExpression);
             l.add(numberOfDaysCondition);
         }
         return andCondition;
