@@ -18,7 +18,7 @@
         {
           "type": "eventPropertyCondition",
           "parameterValues": {
-            "propertyName": "properties.onesignal_web.identifier_id",
+            "propertyName": "properties.onesignal.identifier_id",
             "comparisonOperator": "exists"
           }
         },
