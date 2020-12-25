@@ -5,7 +5,7 @@
     "description": "determine Profile On Properties",
     "scope": "systemscope",
     "tags": [],
-    "systemTags": [],
+    "systemTags": ["metarouter_master"],
     "enabled": true,
     "missingPlugins": false,
     "hidden": false,
