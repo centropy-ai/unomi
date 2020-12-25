@@ -1,0 +1,41 @@
+{
+  "metadata": {
+    "id": "determineProfileOnProperties",
+    "name": "determine Profile On Properties",
+    "description": "determine Profile On Properties",
+    "scope": "systemscope",
+    "tags": [],
+    "systemTags": ["metarouter_master"],
+    "enabled": true,
+    "missingPlugins": false,
+    "hidden": false,
+    "readOnly": false
+  },
+  "itemId": "determineProfileOnProperties",
+  "itemType": "rule",
+  "condition": {
+    "parameterValues": {
+      "operator": "and",
+      "subConditions": [
+        {
+          "parameterValues": {
+            "eventTypeId": "identify"
+          },
+          "type": "eventTypeCondition"
+        }
+      ]
+    },
+    "type": "booleanCondition"
+  },
+  "actions": [
+    {
+      "parameterValues": {},
+      "type": "determineProfileOnPropertiesAction"
+    }
+  ],
+  "linkedItems": null,
+  "raiseEventOnlyOnceForProfile": false,
+  "raiseEventOnlyOnceForSession": false,
+  "raiseEventOnlyOnce": false,
+  "priority": 0
+}
