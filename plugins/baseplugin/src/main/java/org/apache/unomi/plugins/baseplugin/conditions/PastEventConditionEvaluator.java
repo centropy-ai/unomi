@@ -29,6 +29,7 @@ import org.apache.unomi.persistence.spi.PersistenceService;
 import org.apache.unomi.scripting.ScriptExecutor;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +65,7 @@ public class PastEventConditionEvaluator implements ConditionEvaluator {
         if (parameters.containsKey("generatedPropertyKey")) {
             String key = (String) parameters.get("generatedPropertyKey");
             Profile profile = (Profile) item;
-            Map<String,Object> pastEvents = (Map<String, Object>) profile.getSystemProperties().get("pastEvents");
+            Map<String, Object> pastEvents = (Map<String, Object>) profile.getSystemProperties().get("pastEvents");
             if (pastEvents != null) {
                 Number l = (Number) pastEvents.get(key);
                 count = l != null ? l.longValue() : 0L;
@@ -94,18 +95,36 @@ public class PastEventConditionEvaluator implements ConditionEvaluator {
 
             Integer numberOfDays = (Integer) condition.getParameter("numberOfDays");
             if (numberOfDays != null) {
+                String dateExpression = "now-" + numberOfDays + "d";
+                if (context.containsKey("timeStamp")) {
+                    long deltaTime = (long) context.get("timeStamp");
+                    if (deltaTime > 0) {
+                        int hours = Math.toIntExact(((new Date().getTime() - deltaTime) / 1000) / 3600);
+                        if (hours > 0) {
+                            int fromHours = numberOfDays * 24 + hours;
+                            dateExpression = "now-" + fromHours + "h";
+
+                            Condition lessThan = new Condition();
+                            lessThan.setConditionType(definitionsService.getConditionType("sessionPropertyCondition"));
+                            lessThan.setParameter("propertyName", "timeStamp");
+                            lessThan.setParameter("comparisonOperator", "lessThan");
+                            lessThan.setParameter("propertyValueDateExpr", "now-" + hours + "h");
+                            l.add(lessThan);
+                        }
+                    }
+                }
                 Condition numberOfDaysCondition = new Condition();
                 numberOfDaysCondition.setConditionType(definitionsService.getConditionType("sessionPropertyCondition"));
                 numberOfDaysCondition.setParameter("propertyName", "timeStamp");
                 numberOfDaysCondition.setParameter("comparisonOperator", "greaterThan");
-                numberOfDaysCondition.setParameter("propertyValueDateExpr", "now-" + numberOfDays + "d");
+                numberOfDaysCondition.setParameter("propertyValueDateExpr", dateExpression);
                 l.add(numberOfDaysCondition);
             }
             count = persistenceService.queryCount(andCondition, Event.ITEM_TYPE);
         }
 
-        Integer minimumEventCount = parameters.get("minimumEventCount") == null  ? 0 : (Integer) parameters.get("minimumEventCount");
-        Integer maximumEventCount = parameters.get("maximumEventCount") == null  ? Integer.MAX_VALUE : (Integer) parameters.get("maximumEventCount");
+        Integer minimumEventCount = parameters.get("minimumEventCount") == null ? 0 : (Integer) parameters.get("minimumEventCount");
+        Integer maximumEventCount = parameters.get("maximumEventCount") == null ? Integer.MAX_VALUE : (Integer) parameters.get("maximumEventCount");
 
         return count > 0 && (count >= minimumEventCount && count <= maximumEventCount);
     }
