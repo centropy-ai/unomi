@@ -30,6 +30,8 @@ import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.stream.Stream;
+import  org.apache.unomi.utils.AttributionDefinitionType;
+
 
 public class AttributionAction implements ActionExecutor {
     private static final Logger logger = LoggerFactory.getLogger(AttributionAction.class.getName());
@@ -48,6 +50,8 @@ public class AttributionAction implements ActionExecutor {
         }
 
         String touchType = "";
+        String channel = "";
+
 
         String eventType = (String) action.getParameterValues().get("eventTypeProperty");
         String referringValue = (String) action.getParameterValues().get("referringURLProperty");
@@ -60,14 +64,16 @@ public class AttributionAction implements ActionExecutor {
         }
 
         if (!destinationValue.contains(UTM_MEDIUM) && referringValue.length() == 0) {
-            touchType = TOUCH_DIRECT;
+            touchType = AttributionDefinitionType.TouchTypeDirect;
         }
-        if (destinationValue.contains(UTM_MEDIUM) && destinationValue.contains(UTM_CAMPAIGN) && destinationValue.contains(UTM_CHANNEL)) {
-            touchType = TOUCH_PAID;
+
+        if (touchType != AttributionDefinitionType.TouchTypeDirect) {
+            AttributionDefinitionType attributionDefinitionType = AttributionDefinitionType.Create();
+            attributionDefinitionType = attributionDefinitionType.Matches(destinationValue, referringValue);
+            touchType = attributionDefinitionType.GetTouchType();
+            channel = attributionDefinitionType.GetChannel();
         }
-        if (referringValue.length() > 0 && !destinationValue.contains(UTM_CHANNEL) && !destinationValue.contains(UTM_MEDIUM)) {
-            touchType = TOUCH_ORGANIC;
-        }
+
         String[] urlElement = StringUtils.split(destinationValue, "?");
         String campaign = "null";
         if (urlElement.length > 1) {
@@ -85,6 +91,7 @@ public class AttributionAction implements ActionExecutor {
         if (touchType.length() > 0) {
             PropertyHelper.setProperty(event.getSession(), "properties.touch_type", touchType, "setIfMissing");
             PropertyHelper.setProperty(event.getSession(), "properties.touch_source", referringValue, "setIfMissing");
+            PropertyHelper.setProperty(event.getSession(), "properties.touch_channel", channel, "setIfMissing");
             PropertyHelper.setProperty(event.getSession(), "properties.touch_campaign", campaign, "setIfMissing");
             PropertyHelper.setProperty(event.getSession(), "properties.touch_event", eventType, "setIfMissing");
             return EventService.SESSION_UPDATED;
