@@ -18,6 +18,9 @@
 ################################################################################
 # Wait for heathy ElasticSearch
 # next wait for ES status to turn to Green
+
+cat $UNOMI_HOME/etc/org.apache.unomi.operation.cfg
+
 health_check="$(curl -fsSL "$ELASTICSEARCH_HOST:9200/_cat/health?h=status")"
 
 until ([ "$health_check" = 'yellow' ] || [ "$health_check" = 'green' ]); do
@@ -31,5 +34,6 @@ echo org.apache.unomi.elasticsearch.addresses=$ELASTICSEARCH_HOST:$ELASTICSEARCH
 cat $UNOMI_HOME/etc/custom.properties
 $UNOMI_HOME/bin/start
 $UNOMI_HOME/bin/status # Call to status delays while Karaf creates karaf.log
+cat $UNOMI_HOME/etc/org.apache.unomi.operation.cfg
 
 tail -f $UNOMI_HOME/data/log/karaf.log
