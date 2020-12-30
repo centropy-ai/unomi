@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM weburnit/unomi:rc-30
+FROM weburnit/unomi:rc-31
 
 # Unomi environment variables
 ENV UNOMI_HOME /opt/apache-unomi
