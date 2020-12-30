@@ -34,6 +34,8 @@ echo org.apache.unomi.elasticsearch.addresses=$ELASTICSEARCH_HOST:$ELASTICSEARCH
 cat $UNOMI_HOME/etc/custom.properties
 $UNOMI_HOME/bin/start
 $UNOMI_HOME/bin/status # Call to status delays while Karaf creates karaf.log
+
+sleep 60
 cat $UNOMI_HOME/etc/org.apache.unomi.operation.cfg
 
 tail -f $UNOMI_HOME/data/log/karaf.log
