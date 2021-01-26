@@ -541,8 +541,8 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
         Profile previousProfile = persistenceService.load(profile.getItemId(), Profile.class);
         profile.setSystemProperty("lastUpdated", new Date());
         Set<String> segments = previousProfile.getSegments();
-        logger.info("profile",String.join(", ", profile.getSegments()));
-        logger.info("previousProfile",String.join(", ", previousProfile.getSegments()));
+        logger.debug("profile",String.join(", ", profile.getSegments()));
+        logger.debug("previousProfile",String.join(", ", previousProfile.getSegments()));
         previousProfile.setSegments(segments);
 
         if (previousProfile == null) {
