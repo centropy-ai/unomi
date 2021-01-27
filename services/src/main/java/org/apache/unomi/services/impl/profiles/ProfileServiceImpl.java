@@ -554,10 +554,10 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
                 return null;
             }
         } else if (merge(previousProfile, profile)) {
-            previousProfile.getSegments().addAll(segments);
-            logger.info("segments_pre:" + String.join(", ", previousProfile.getSegments()));
-
             if (persistenceService.save(previousProfile)) {
+                if (segments.size() > 0) {
+                    persistenceService.update(previousProfile.getItemId(), null, Profile.class, "segments", segments);
+                }
                 return previousProfile;
             } else {
                 return null;
