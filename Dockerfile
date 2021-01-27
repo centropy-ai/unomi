@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM weburnit/unomi:rc-debug-8
+FROM weburnit/unomi:rc-debug-9mv
 
 # Unomi environment variables
 ENV UNOMI_HOME /opt/apache-unomi
