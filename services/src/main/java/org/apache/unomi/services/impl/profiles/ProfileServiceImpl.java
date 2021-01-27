@@ -540,10 +540,12 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
     public Profile saveOrMerge(Profile profile) {
         Profile previousProfile = persistenceService.load(profile.getItemId(), Profile.class);
         profile.setSystemProperty("lastUpdated", new Date());
-        Set<String> segments = previousProfile.getSegments();
-        logger.debug("profile",String.join(", ", profile.getSegments()));
-        logger.debug("previousProfile",String.join(", ", previousProfile.getSegments()));
-        previousProfile.setSegments(segments);
+
+        Set<String> segments = new HashSet<>();
+        if (previousProfile != null) {
+            segments = previousProfile.getSegments();
+        }
+        logger.info("segments_pre:" + String.join(", ", segments));
 
         if (previousProfile == null) {
             if (persistenceService.save(profile)) {
@@ -552,6 +554,7 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
                 return null;
             }
         } else if (merge(previousProfile, profile)) {
+            previousProfile.setSegments(segments);
             if (persistenceService.save(previousProfile)) {
                 return previousProfile;
             } else {
