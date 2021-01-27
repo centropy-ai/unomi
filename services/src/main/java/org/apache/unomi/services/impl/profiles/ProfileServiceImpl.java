@@ -545,7 +545,6 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
         if (previousProfile != null && previousProfile.getSegments().size() > 0) {
             segments = previousProfile.getSegments();
         }
-        logger.info("segments:" + String.join(", ", segments));
 
         if (previousProfile == null) {
             if (persistenceService.save(profile)) {
