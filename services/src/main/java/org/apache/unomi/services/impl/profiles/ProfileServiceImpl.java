@@ -545,7 +545,7 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
         if (previousProfile != null && previousProfile.getSegments().size() > 0) {
             segments = previousProfile.getSegments();
         }
-        logger.info("segments_pre:" + String.join(", ", segments));
+        logger.info("segments:" + String.join(", ", segments));
 
         if (previousProfile == null) {
             if (persistenceService.save(profile)) {
@@ -554,7 +554,9 @@ public class ProfileServiceImpl implements ProfileService, SynchronousBundleList
                 return null;
             }
         } else if (merge(previousProfile, profile)) {
-            previousProfile.setSegments(segments);
+            previousProfile.getSegments().addAll(segments);
+            logger.info("segments_pre:" + String.join(", ", previousProfile.getSegments()));
+
             if (persistenceService.save(previousProfile)) {
                 return previousProfile;
             } else {
