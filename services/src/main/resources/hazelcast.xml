@@ -57,7 +57,7 @@
 <!--            </aws>-->
             <kubernetes enabled="true">
                 <namespace>default</namespace>
-                <service-name>unomi-slaver</service-name>
+                <service-name>main-hazelcast-mancenter</service-name>
             </kubernetes>
         </join>
         <interfaces enabled="false">
