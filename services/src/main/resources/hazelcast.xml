@@ -40,9 +40,9 @@
 <!--                <multicast-group>172.22.0.1</multicast-group>-->
 <!--                <multicast-port>54327</multicast-port>-->
             </multicast>
-            <tcp-ip enabled="true">
-                <members>14.13.0.0</members>
-            </tcp-ip>
+<!--            <tcp-ip enabled="true">-->
+<!--                <members>14.13.0.0</members>-->
+<!--            </tcp-ip>-->
 <!--            <aws enabled="false">-->
 <!--                <access-key>my-access-key</access-key>-->
 <!--                <secret-key>my-secret-key</secret-key>-->
