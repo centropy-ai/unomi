@@ -260,7 +260,7 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
                 ParserHelper.resolveConditionType(definitionsService, rule.getCondition());
                 ParserHelper.resolveActionTypes(definitionsService, rule.getActions());
                 results.add(rule);
-                logger.info("Add rule {} for server {}", rule.getItemId(), nodeType);
+//                logger.info("Add rule {} for server {}", rule.getItemId(), nodeType);
             }
         }
         return results;
