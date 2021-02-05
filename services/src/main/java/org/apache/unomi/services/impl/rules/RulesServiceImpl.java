@@ -288,7 +288,7 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
 
         int changes = EventService.NO_CHANGE;
         for (Rule rule : rules) {
-            logger.debug("Fired rule " + rule.getMetadata().getId() + " for " + event.getEventType() + " - " + event.getItemId());
+//            logger.debug("Fired rule " + rule.getMetadata().getId() + " for " + event.getEventType() + " - " + event.getItemId());
             fireExecuteActions(rule, event);
 
             long actionsStartTime = System.currentTimeMillis();
