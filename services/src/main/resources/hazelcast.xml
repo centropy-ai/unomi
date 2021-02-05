@@ -41,7 +41,7 @@
 <!--                <multicast-port>54327</multicast-port>-->
             </multicast>
             <tcp-ip enabled="true">
-                <members>10.233.90.118</members>
+                <members>10.233.92.209</members>
             </tcp-ip>
 <!--            <aws enabled="false">-->
 <!--                <access-key>my-access-key</access-key>-->
