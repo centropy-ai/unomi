@@ -8,6 +8,7 @@ import org.apache.camel.builder.RouteBuilder;
 import org.apache.camel.component.jackson.JacksonDataFormat;
 import org.apache.camel.component.kafka.KafkaComponent;
 import org.apache.camel.component.kafka.KafkaConfiguration;
+import org.apache.camel.component.kafka.KafkaConstants;
 import org.apache.camel.component.kafka.KafkaEndpoint;
 import org.apache.camel.core.osgi.OsgiDefaultCamelContext;
 import org.apache.unomi.api.Event;
@@ -20,6 +21,7 @@ import org.osgi.framework.SynchronousBundleListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.HashMap;
 import java.util.Map;
 
 public class EventKafkaContext implements SynchronousBundleListener {
@@ -161,7 +163,9 @@ public class EventKafkaContext implements SynchronousBundleListener {
 
         @Override
         public void sendBody(String to, Event data) {
-            this.producer.sendBody(to, data);
+            Map<String, Object> header = new HashMap<>();
+            header.put(KafkaConstants.KEY, data.getProfile().getItemId());
+            this.producer.sendBodyAndHeaders(to, data, header);
         }
     }
 }
