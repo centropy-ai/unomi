@@ -41,7 +41,7 @@
 <!--                <multicast-port>54327</multicast-port>-->
             </multicast>
             <tcp-ip enabled="true">
-                <members>main-hazelcast-svc</members>
+                <members>10.233.90.75</members>
             </tcp-ip>
 <!--            <aws enabled="false">-->
 <!--                <access-key>my-access-key</access-key>-->
