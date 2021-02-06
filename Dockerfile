@@ -35,10 +35,12 @@ RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.t
 USER nonroot
 WORKDIR $UNOMI_HOME
 COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
-RUN chmod 0444 ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+RUN ls -la ./etc/*
 #Revert to root to chown config file by root
 USER root
+RUN chmod 0444 ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN chown root:root ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+RUN ls -la ./etc/*
 
 USER nonroot
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
