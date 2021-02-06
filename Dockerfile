@@ -32,6 +32,7 @@ RUN apt-get update -y
 WORKDIR $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
 COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+RUN chmod 0444 ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 COPY ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
 
