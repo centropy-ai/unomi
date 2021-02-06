@@ -29,10 +29,18 @@ RUN apt-get update -y
 #RUN apt-get install maven -y
 #COPY . /apache-unomi
 #RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
+RUN useradd -u 1234 nonroot
+#Run Container as nonroot
+USER nonroot
 WORKDIR $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
 COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN chmod 0444 ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+#Revert to root to chown config file by root
+USER root
+RUN chown root:root ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+
+USER nonroot
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 COPY ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
 
