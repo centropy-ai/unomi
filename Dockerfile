@@ -38,6 +38,7 @@ COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.a
 RUN ls -la ./etc/*
 #Revert to root to chown config file by root
 USER root
+RUN mkdir -p /opt/apache-unomi/data/log && chown nonroot:nonroot -R /opt/apache-unomi
 RUN chmod 0444 ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN chown root:root ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN ls -la ./etc/*
