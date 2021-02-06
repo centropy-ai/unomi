@@ -31,9 +31,9 @@ RUN apt-get update -y
 #RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
 RUN useradd -u 1234 nonroot
 #Run Container as nonroot
+RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
 USER nonroot
 WORKDIR $UNOMI_HOME
-RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
 COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN chmod 0444 ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 #Revert to root to chown config file by root
