@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM weburnit/unomi:rc-46
+FROM weburnit/unomi:rc-47
 
 # Unomi environment variables
 ENV UNOMI_HOME /opt/apache-unomi
@@ -29,21 +29,9 @@ RUN apt-get update -y
 #RUN apt-get install maven -y
 #COPY . /apache-unomi
 #RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
-RUN useradd -u 1234 nonroot
-#Run Container as nonroot
-RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
-USER nonroot
 WORKDIR $UNOMI_HOME
+RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
 COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
-RUN ls -la ./etc/*
-#Revert to root to chown config file by root
-USER root
-RUN mkdir -p /opt/apache-unomi/data/log && chown nonroot:nonroot -R /opt/apache-unomi
-RUN chmod 0444 ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
-RUN chown root:root ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
-RUN ls -la ./etc/*
-
-USER nonroot
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 COPY ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
 
