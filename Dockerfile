@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM weburnit/unomi:rc-hazel-1
+FROM weburnit/unomi:rc-hazel-2
 
 # Unomi environment variables
 ENV UNOMI_HOME /opt/apache-unomi
@@ -31,9 +31,9 @@ RUN apt-get update -y
 #RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
 WORKDIR $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
-COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+COPY --chown=nonroot ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
-COPY ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
+COPY --chown=nonroot ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
 
 EXPOSE 9443
 EXPOSE 8181
