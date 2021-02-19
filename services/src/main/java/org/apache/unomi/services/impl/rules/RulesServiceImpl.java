@@ -260,7 +260,7 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
                 ParserHelper.resolveConditionType(definitionsService, rule.getCondition());
                 ParserHelper.resolveActionTypes(definitionsService, rule.getActions());
                 results.add(rule);
-//                logger.info("Add rule {} for server {}", rule.getItemId(), nodeType);
+                logger.info("Add rule {} for server {}", rule.getItemId(), nodeType);
             }
         }
         return results;
@@ -288,7 +288,7 @@ public class RulesServiceImpl implements RulesService, EventListenerService, Syn
 
         int changes = EventService.NO_CHANGE;
         for (Rule rule : rules) {
-//            logger.debug("Fired rule " + rule.getMetadata().getId() + " for " + event.getEventType() + " - " + event.getItemId());
+            logger.debug("Fired rule " + rule.getMetadata().getId() + " for " + event.getEventType() + " - " + event.getItemId());
             fireExecuteActions(rule, event);
 
             long actionsStartTime = System.currentTimeMillis();
