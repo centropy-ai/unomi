@@ -34,11 +34,11 @@ echo org.apache.unomi.elasticsearch.addresses=$ELASTICSEARCH_HOST:$ELASTICSEARCH
 cat $UNOMI_HOME/etc/custom.properties
 #cat $UNOMI_HOME/etc/custom.system.properties
 #cat $UNOMI_HOME/etc/org.ops4j.pax.logging.cfg
-#cat $UNOMI_HOME/etc/org.apache.karaf.shell.cfg
 
 $UNOMI_HOME/bin/start
 $UNOMI_HOME/bin/status # Call to status delays while Karaf creates karaf.log
 
 cat $UNOMI_HOME/etc/org.apache.unomi.operation.cfg
+cat $UNOMI_HOME/etc/org.apache.karaf.cellar.groups.cfg
 
 tail -f $UNOMI_HOME/data/log/karaf.log
