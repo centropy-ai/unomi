@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM weburnit/unomi:rc-hazel-8
+FROM weburnit/unomi:rc-hazel-9
 
 # Unomi environment variables
 ENV UNOMI_HOME /opt/apache-unomi
