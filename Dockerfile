@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM weburnit/unomi:rc-hazel-2
+FROM weburnit/unomi:rc-hazel-3
 
 # Unomi environment variables
 ENV UNOMI_HOME /opt/apache-unomi
@@ -34,6 +34,7 @@ RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.t
 RUN echo "org.apache.unomi.logs.root.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
 RUN echo "org.apache.unomi.logs.sshd.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
 RUN echo "org.apache.unomi.logs.cxf.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
+RUN echo "log4j2.rootLogger.appenderRef.Console.filter.threshold.level=DEBUG"
 COPY --chown=nonroot ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 COPY --chown=nonroot ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
