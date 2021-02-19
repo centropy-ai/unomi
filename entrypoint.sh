@@ -44,4 +44,6 @@ $UNOMI_HOME/bin/status # Call to status delays while Karaf creates karaf.log
 
 cat $UNOMI_HOME/etc/org.apache.unomi.operation.cfg
 
-tail -f $UNOMI_HOME/data/log/karaf.log
+tail -f /logs/oaam.log
+
+#tail -f $UNOMI_HOME/data/log/karaf.log
