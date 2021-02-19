@@ -32,12 +32,9 @@ done
 cp -f $UNOMI_HOME/etc/custom.properties.template $UNOMI_HOME/etc/custom.properties
 echo org.apache.unomi.elasticsearch.addresses=$ELASTICSEARCH_HOST:$ELASTICSEARCH_PORT >> $UNOMI_HOME/etc/custom.properties
 cat $UNOMI_HOME/etc/custom.properties
-cat $UNOMI_HOME/etc/custom.system.properties
-cat $UNOMI_HOME/etc/org.ops4j.pax.logging.cfg
-cat $UNOMI_HOME/etc/org.apache.karaf.shell.cfg
-
-mkdir /logs
-chmod 777 /logs
+#cat $UNOMI_HOME/etc/custom.system.properties
+#cat $UNOMI_HOME/etc/org.ops4j.pax.logging.cfg
+#cat $UNOMI_HOME/etc/org.apache.karaf.shell.cfg
 
 $UNOMI_HOME/bin/start
 $UNOMI_HOME/bin/status # Call to status delays while Karaf creates karaf.log

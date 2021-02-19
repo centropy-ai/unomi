@@ -15,7 +15,7 @@
 # limitations under the License.
 ################################################################################
 
-FROM weburnit/unomi:rc-hazel-9
+FROM weburnit/unomi:rc-hazel-10
 
 # Unomi environment variables
 ENV UNOMI_HOME /opt/apache-unomi
@@ -32,13 +32,9 @@ ENV KARAF_DEBUG "true"
 #RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
 WORKDIR $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
-RUN echo "org.apache.unomi.logs.root.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
-RUN echo "org.apache.unomi.logs.sshd.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
-RUN echo "org.apache.unomi.logs.cxf.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
-RUN echo "log4j2.rootLogger.appenderRef.Console.filter.threshold.level=DEBUG"
-COPY --chown=nonroot ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
-COPY --chown=nonroot ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
+COPY ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
 
 EXPOSE 9443
 EXPOSE 8181

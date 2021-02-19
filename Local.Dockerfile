@@ -28,14 +28,12 @@ ENV ELASTICSEARCH_PORT 9300
 RUN apt-get update -y
 RUN apt-get install maven -y
 
-RUN useradd -u 1234 nonroot
-USER nonroot
 WORKDIR $UNOMI_HOME
-COPY --chown=nonroot ./package/target/assembly/ $UNOMI_HOME
+COPY ./package/target/assembly/ $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
-COPY --chown=nonroot ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
+COPY ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 
-COPY --chown=nonroot ./entrypoint.sh ./entrypoint.sh
+COPY ./entrypoint.sh ./entrypoint.sh
 
 EXPOSE 9443
 EXPOSE 8181
