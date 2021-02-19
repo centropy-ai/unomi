@@ -22,6 +22,7 @@ ENV UNOMI_HOME /opt/apache-unomi
 ENV PATH $PATH:$UNOMI_HOME/bin
 
 ENV KARAF_OPTS "-Dunomi.autoStart=true"
+ENV KARAF_DEBUG "true"
 
 # ENV ELASTICSEARCH_HOST localhost
 # ENV ELASTICSEARCH_PORT 9300
