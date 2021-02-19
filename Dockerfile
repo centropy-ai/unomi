@@ -23,9 +23,6 @@ ENV PATH $PATH:$UNOMI_HOME/bin
 
 ENV KARAF_OPTS "-Dunomi.autoStart=true"
 
-ENV UNOMI_LOGS_ROOT_LEVEL "DEBUG"
-ENV UNOMI_LOGS_SSHD_LEVEL "DEBUG"
-ENV UNOMI_LOGS_CXF_LEVEL "DEBUG"
 # ENV ELASTICSEARCH_HOST localhost
 # ENV ELASTICSEARCH_PORT 9300
 #RUN apt-get update -y
@@ -34,6 +31,9 @@ ENV UNOMI_LOGS_CXF_LEVEL "DEBUG"
 #RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
 WORKDIR $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
+RUN echo "org.apache.unomi.logs.root.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.properties.template
+RUN echo "org.apache.unomi.logs.sshd.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.properties.template
+RUN echo "org.apache.unomi.logs.cxf.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.properties.template
 COPY --chown=nonroot ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 COPY --chown=nonroot ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
