@@ -31,9 +31,9 @@ ENV KARAF_OPTS "-Dunomi.autoStart=true"
 #RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
 WORKDIR $UNOMI_HOME
 RUN cp ${UNOMI_HOME}/etc/custom.properties ${UNOMI_HOME}/etc/custom.properties.template
-RUN echo "org.apache.unomi.logs.root.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.properties.template
-RUN echo "org.apache.unomi.logs.sshd.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.properties.template
-RUN echo "org.apache.unomi.logs.cxf.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.properties.template
+RUN echo "org.apache.unomi.logs.root.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
+RUN echo "org.apache.unomi.logs.sshd.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
+RUN echo "org.apache.unomi.logs.cxf.level=DEBUG" >> ${UNOMI_HOME}/etc/custom.system.properties
 COPY --chown=nonroot ./extensions/data-operation/data-operation-actions/src/main/resources/org.apache.unomi.operation.cfg ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 RUN cat ${UNOMI_HOME}/etc/org.apache.unomi.operation.cfg
 COPY --chown=nonroot ./entrypoint.sh /opt/apache-unomi/entrypoint.sh
