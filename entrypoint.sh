@@ -41,10 +41,5 @@ $UNOMI_HOME/bin/start
 $UNOMI_HOME/bin/status # Call to status delays while Karaf creates karaf.log
 
 cat $UNOMI_HOME/etc/org.apache.unomi.operation.cfg
-sleep 60
-cat $UNOMI_HOME/etc/custom.properties
-cat $UNOMI_HOME/etc/custom.system.properties
-cat $UNOMI_HOME/etc/org.ops4j.pax.logging.cfg
-cat $UNOMI_HOME/etc/org.apache.karaf.shell.cfg
 
 tail -f $UNOMI_HOME/data/log/karaf.log
