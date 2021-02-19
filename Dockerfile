@@ -25,7 +25,7 @@ ENV KARAF_OPTS "-Dunomi.autoStart=true"
 
 # ENV ELASTICSEARCH_HOST localhost
 # ENV ELASTICSEARCH_PORT 9300
-RUN apt-get update -y
+#RUN apt-get update -y
 #RUN apt-get install maven -y
 #COPY . /apache-unomi
 #RUN cd /apache-unomi && mvn install -Drat.skip=true -DskipTests=true
