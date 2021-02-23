@@ -40,9 +40,9 @@
 <!--                <multicast-group>172.22.0.1</multicast-group>-->
 <!--                <multicast-port>54327</multicast-port>-->
             </multicast>
-            <tcp-ip enabled="true">
-                <members>10.233.90.75</members>
-            </tcp-ip>
+<!--            <tcp-ip enabled="true">-->
+<!--                <members>10.233.90.75</members>-->
+<!--            </tcp-ip>-->
 <!--            <aws enabled="false">-->
 <!--                <access-key>my-access-key</access-key>-->
 <!--                <secret-key>my-secret-key</secret-key>-->
@@ -55,10 +55,10 @@
 <!--                <tag-key>type</tag-key>-->
 <!--                <tag-value>hz-nodes</tag-value>-->
 <!--            </aws>-->
-<!--            <kubernetes enabled="true">-->
-<!--                <namespace>default</namespace>-->
-<!--                <service-name>main-hazelcast</service-name>-->
-<!--            </kubernetes>-->
+            <kubernetes enabled="true">
+                <namespace>default</namespace>
+                <service-name>main-hazelcast</service-name>
+            </kubernetes>
         </join>
         <interfaces enabled="false">
             <interface>10.10.1.*</interface>
