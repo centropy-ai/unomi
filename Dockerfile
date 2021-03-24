@@ -35,7 +35,7 @@ COPY ./package/target/assembly/ $UNOMI_HOME
 WORKDIR $UNOMI_HOME
 
 #RUN wget http://apache.mirrors.pair.com/unomi/${UNOMI_VERSION}/unomi-${UNOMI_VERSION}-bin.tar.gz
-#
+##
 #RUN tar -xzf unomi-${UNOMI_VERSION}-bin.tar.gz \
 #	&& mv unomi-*/* . \
 #	&& rm -rf unomi-*
